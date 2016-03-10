@@ -16,3 +16,12 @@ begin library "ocplib-dwarf"
   files = [ "dwarfTypes.ml" "dwarfReader.ml" "dwarfPrinter.ml" ]
   requires = [ "ocplib-elf" ]
 end
+
+begin library "ocplib-xxd"
+  files = [ "xxd.ml" ]
+end
+
+begin program "ocp-dwarf"
+  files = [ "test_dwarf.ml" ]
+  requires = [ "ocplib-dwarf" "ocplib-xxd" "str" ]
+end
