@@ -48,6 +48,7 @@ let _ =
             with Not_found -> Printf.printf "error : section %s not found\n" !single_section; exit 1 in
         let section_stream = Stream.of_string target_section in
 
+        if String.compare !single_section ".debug_info" == 0 then
         DwarfReader.read_section_header section_stream;
 
         if !hex_flag then begin
