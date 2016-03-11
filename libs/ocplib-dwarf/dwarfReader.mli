@@ -13,3 +13,4 @@
 (**************************************************************************)
 
 val read : string -> DwarfTypes.t
+val read_section_header : char Stream.t -> unit

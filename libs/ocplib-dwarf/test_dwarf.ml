@@ -1,67 +1,58 @@
 open ElfTypes.RAW
 
-let print_dwarf = ref false
+type t = (string, string) Hashtbl.t;;
+
+let hex_flag = ref false
+let single_section = ref ""
 
 let arg_list = Arg.align [
-    "-dw", Arg.Set print_dwarf, " DWARF output";
+    "-xxd", Arg.Set hex_flag, " output hex dump of target section";
+    "--section", Arg.String (fun s -> single_section := s), " target section";
   ]
 
 let arg_usage =
   Printf.sprintf "%s [OPTIONS] FILES" (Filename.basename Sys.argv.(0))
 
-(*let string_of_addr v =*)
-  (*Printf.sprintf "0x%LxL (* %Ld *)" v v*)
+let dump_hex s =
+  Xxd.output_lines s (Buffer.create 16) (Buffer.create 16) 0 (String.length s)
 
-  (*let section_header b indent sh =*)
-    (*Printf.bprintf b "{\n";*)
-    (*Printf.bprintf b "%s sh_name = %LdL\n" indent sh.sh_name;*)
-    (*Printf.bprintf b "%s sh_addr = %s;\n" indent (string_of_addr sh.sh_addr);*)
-    (*Printf.bprintf b "%s sh_offset = %Ld;\n" indent sh.sh_offset;*)
-    (*Printf.bprintf b "%s sh_size = %Ld;\n" indent sh.sh_size;*)
-    (*Printf.bprintf b "%s sh_link = %Ld;\n" indent sh.sh_link;*)
-    (*Printf.bprintf b "%s sh_info = %Ld;\n" indent sh.sh_info;*)
-    (*Printf.bprintf b "%s sh_addralign = %Ld;\n" indent sh.sh_addralign;*)
-    (*Printf.bprintf b "%s sh_entsize = %Ld;\n" indent sh.sh_entsize;*)
-    (*Printf.bprintf b "%s}" indent*)
-
-  (*let section b indent s =*)
-    (*Printf.bprintf b "{\n";*)
-    (*Printf.bprintf b "%s section_name = %S;\n" indent s.section_name;*)
-    (*Printf.bprintf b "%s section_content = string[%d];\n" indent*)
-      (*(String.length s.section_content);*)
-    (*Printf.bprintf b "%s section_header = " indent;*)
-    (*section_header b (indent ^ "  ") s.section_header;*)
-    (*Printf.bprintf b ";\n";*)
-    (*Printf.bprintf b "%s}" indent*)
+let is_string_empty s = (s = "")
 
 let _ =
   Arg.parse arg_list (fun file ->
 
-    if !print_dwarf then begin
-        Printf.printf "DWARF\n";
+    let raw = ElfReader.RAW.read file in
 
-        let raw = ElfReader.RAW.read file in
+    let regex = (Str.regexp "debug") in
+    let filter_debug_sections s_name = Str.string_match regex s_name 1 in
 
-        let regex = (Str.regexp "debug") in
-        let filter_debug_sections s_name = Str.string_match regex s_name 1 in
-        let b = Buffer.create 1000 in
-        let indent = "    " in
+    let t_original : t = Hashtbl.create 10 in
 
-        Array.iteri (fun i s ->
-            if String.length s.section_name > 0 then begin
-                if filter_debug_sections s.section_name
-                then begin
-                    Printf.printf "%s\n" s.section_name;
-                    let bu = s.section_content in
-                    Xxd.output_lines bu (Buffer.create 16) (Buffer.create 16) 0 (String.length bu)
-                    (*Printf.bprintf b "%s   (* section %d *) " indent i;*)
-                    (*section b (indent ^ "     ") s;*)
-                    (*Printf.bprintf b ";\n";*)
-                end
-            end;
-        ) raw.elf_sections;
+    Array.iteri (fun i s ->
+        if String.length s.section_name > 0 then begin
+            if filter_debug_sections s.section_name
+            then begin
+                Hashtbl.add t_original s.section_name s.section_content;
+            end
+        end;
+    ) raw.elf_sections;
 
-        Printf.printf "%s\n" (Buffer.contents b);
+    if is_string_empty !single_section then begin
+        Printf.printf "available sections : \n";
+        Hashtbl.iter (fun k v -> Printf.printf "%s\n" k) t_original
+    end
+    else begin
+        let target_section =
+            try
+                Hashtbl.find t_original !single_section
+            with Not_found -> Printf.printf "error : section %s not found\n" !single_section; exit 1 in
+        let section_stream = Stream.of_string target_section in
+
+        DwarfReader.read_section_header section_stream;
+
+        if !hex_flag then begin
+            dump_hex target_section;
+        end
     end;
 
   ) arg_usage

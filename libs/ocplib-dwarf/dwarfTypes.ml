@@ -42,6 +42,10 @@ end
 
 module Int64 = Int64
 
+type dwarf_format =
+  DWF_32BITS
+  | DWF_64BITS
+
 (* Section 7.21 - Line Number Information *)
 type dwarf_line_number_information =
     DW_LNI_special of Word64.t * Int64.t
@@ -246,7 +250,7 @@ type dwarf_abbreviation =
       abbrev_attributes : (dwarf_AT * dwarf_FORM) list;
     }
 
-type dward_DIE =
+type dwarf_DIE =
     { die_id : Word64.t; (* Unique identifier for this entry. *)
       (* Unique identifier of this entry's parent. *)
       die_parent : Word64.t option;
