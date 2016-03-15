@@ -1,7 +1,7 @@
 (*From Practical OCaml*)
 
 let make_printable i_char = match i_char with
-  n when (((Char.code n) < 32) or ((Char.code n) > 126)) -> '.'
+  n when (((Char.code n) < 32) || ((Char.code n) > 126)) -> '.'
   | _ -> i_char;;
 
 let make_hex chr = Printf.sprintf "%.2x" (Char.code chr);;
@@ -23,7 +23,7 @@ let string_map str fnc =
 let rec output_lines s f_buf s_buf curpos len =
     try
         let res = if len < 16 then len else 16 in
-        let str_buf = String.create 16 in
+        let str_buf = Bytes.create 16 in
         Bytes.blit_string s curpos str_buf 0 res;
         (
         if (res < 16) then

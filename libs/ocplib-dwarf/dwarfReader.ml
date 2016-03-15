@@ -12,20 +12,24 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open OptionMonad
+open Leb128
 open DwarfTypes
 open DwarfPrinter
+
+type at = (int, dwarf_abbreviation) Hashtbl.t
 
 let get_initial_length stream =
   let sixty_four_bit_indicator = 0xffffffffl in
 
   Stream_in.read_int32 stream
-  |> fun first_word ->
+  >>= fun first_word ->
       if first_word <> sixty_four_bit_indicator then
-          (DWF_32BITS, Int64.of_int32 first_word)
+          Some(DWF_32BITS, Int64.of_int32 first_word)
       else
         Stream_in.read_int64 stream
-        |> fun initial_length ->
-                (DWF_64BITS, initial_length)
+        >>= fun initial_length ->
+                Some(DWF_64BITS, initial_length)
 
 let get_version s = Stream_in.read_int16 s
 
@@ -33,84 +37,68 @@ let get_address_size s = Stream_in.read_int8 s
 
 let get_abbrev_offset s dwf =
   match dwf with
-    DWF_32BITS -> Int64.of_int32 @@ Stream_in.read_int32 s
+    DWF_32BITS -> Stream_in.read_int32 s >>= (fun i32 -> Some (Int64.of_int32 i32))
     | DWF_64BITS -> Stream_in.read_int64 s
-
-let read_section_header s =
-  let (dwarf_format, initial_length) = get_initial_length s in
-  let version = get_version s in
-  let abbrev_offset = get_abbrev_offset s dwarf_format in
-  let address_size = get_address_size s in
-
-  begin
-  match dwarf_format with
-    DWF_32BITS -> Printf.printf "dwarf format 32 bits\n";
-    | DWF_64BITS -> Printf.printf "dwarf format 64 bits\n";
-  end;
-  Printf.printf "initial length : %Lu\n" initial_length;
-  Printf.printf "dwarf version : %d\n" version;
-  Printf.printf "debug_abbrev_offset : %Lu\n" abbrev_offset;
-  Printf.printf "address width on target arch: %d bytes\n" address_size
-
-let read_sleb128 s =
-  let rec hparse ~result ~shift =
-    Stream_in.read_int8 s
-    |> fun i ->
-    let lower_7_bits = Int64.of_int (i lor 0x7f) in
-    let result = Int64.logor result (Int64.shift_left lower_7_bits shift) in
-    let shift = shift + 7 in
-    let sign_bit_set = i lor 0x40 <> 0 in
-    if i < 128 then (result, shift, sign_bit_set)
-    else hparse ~result ~shift
-  in
-  hparse ~result:Int64.zero ~shift:0
-  |> fun (result, shift, sign_bit_set) ->
-  if (shift < 64 && sign_bit_set) then
-    (Int64.logor result (Int64.neg (Int64.shift_left Int64.one shift)))
-  else
-    result
-
-let read_uleb128 s =
-  let rec hparse ~result ~shift =
-    Stream_in.read_int8 s
-    |> fun i ->
-    let lower_7_bits = Int64.of_int (i lor 0x7f) in
-    let result = Int64.logor result (Int64.shift_left lower_7_bits shift) in
-    if i < 128 then Int64.to_int result
-    else hparse ~result ~shift:(shift + 7)
-  in
-  hparse ~result:Int64.zero ~shift:0
-
-type at = (Word64.t, dwarf_abbreviation) Hashtbl.t
-
-(*type dwarf_abbreviation =*)
-    (*{ abbrev_num : Word64.t;*)
-      (*abbrev_tag : dwarf_TAG;*)
-      (*abbrev_has_children : bool;*)
-      (*abbrev_attributes : (dwarf_AT * dwarf_FORM) list;*)
-    (*}*)
 
 let read_abbrev_declaration s decl_code =
     let rec attr_helper s =
         match (read_uleb128 s, read_uleb128 s) with
-          0, 0 -> []
-          | attr_name, attr_form -> (dw_at attr_name, dw_form attr_form) :: attr_helper s in
+          Some(0), Some(0) -> []
+          | Some(attr_name), Some(attr_form) -> (dw_at attr_name, dw_form attr_form) :: attr_helper s
+          (*| _, _ -> raise (Failure "cannot read attribute")*)
+          | _, _ -> []
+  in
     { abbrev_num = decl_code;
-      abbrev_tag = dw_tag @@ read_uleb128 s;
-      (*abbrev_has_children = match Stream_in.read_int8 s with 0x01 -> true | _ -> false;*)
-      abbrev_has_children = true;
+      abbrev_tag = (begin match read_uleb128 s with Some(t) -> dw_tag t | _ -> raise (Failure "cannot read tag") end);
+      abbrev_has_children = begin match Stream_in.read_int8 s with Some(0x01) -> true | _ -> false end;
       abbrev_attributes = attr_helper s;
     }
 
 let rec read_abbrev_section s abbrev_tbl =
-    let zero = Int64.zero in
     let decl_code = read_uleb128 s in
-    match Int64.compare decl_code (Int64.zero) with
-    | 0 -> abbrev_tbl
-    | _ -> begin
-                let abbrev_declaration = read_abbrev_declaration s decl_code in
-                Hashtbl.add abbrev_tbl decl_code abbrev_declaration;
-                read_abbrev_section s abbrev_tbl
-                end
+    match decl_code with
+    | Some(0) -> abbrev_tbl
+    (*| Some(c) -> begin*)
+             (*let abbrev_declaration = read_abbrev_declaration s (Int64.of_int c) in*)
+             (*Hashtbl.add abbrev_tbl c abbrev_declaration;*)
+             (*abbrev_tbl*)
+             (*[>read_abbrev_section s abbrev_tbl<]*)
+           (*end*)
+    | Some (c) -> Printf.printf "%d\n" c; abbrev_tbl
+    | None -> raise (Failure "cannot read decl_code")
 
-let read s = ()
+let read_CUs s =
+  let offset = ref 0 in
+  while Stream.peek s != None do
+      get_initial_length s
+      >>= fun (dwarf_format, initial_length) ->
+      get_version s
+      >>= fun version ->
+      get_abbrev_offset s dwarf_format
+      >>= fun abbrev_offset ->
+      get_address_size s
+      >>= fun address_size ->
+
+      begin
+      let initial_length_size = match dwarf_format with
+        DWF_32BITS -> 4
+        | DWF_64BITS -> 12
+      in
+      let abbrev_offset_size = match dwarf_format with
+        DWF_32BITS ->Printf.printf "dwarf format 32 bits\n"; 4
+        | DWF_64BITS -> Printf.printf "dwarf format 64 bits\n";8
+      in
+      let to_skip = Int64.to_int (Int64.sub initial_length (Int64.of_int (2 + 1 + abbrev_offset_size))) in
+      offset := !offset + initial_length_size + abbrev_offset_size + 2 + 1;
+      (*Printf.printf "now at offset %d\n" !offset;*)
+      Printf.printf "initial length : %Lu\n" initial_length;
+      (*Printf.printf "dwarf version : %d\n" version;*)
+      Printf.printf "debug_abbrev_offset : %Lu\n" abbrev_offset;
+      (*Printf.printf "address width on target arch: %d bytes\n" address_size;*)
+      (*Printf.printf "bytes to skip: %d\n" to_skip;*)
+      for i = 1 to to_skip do Stream.junk s; offset := !offset + 1 done;
+      Printf.printf "now at offset %d\n" !offset;
+      None
+      end
+  done;
+

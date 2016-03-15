@@ -12,5 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val read : string -> DwarfTypes.t
-val read_section_header : char Stream.t -> unit
+open DwarfTypes
+
+type at = (int, dwarf_abbreviation) Hashtbl.t
+
+(*val read : string -> DwarfTypes.t*)
+val read_CUs : char Stream.t -> unit
