@@ -27,6 +27,7 @@ let _ =
     let filter_debug_sections s_name = Str.string_match regex s_name 1 in
 
     let t_original : t = Hashtbl.create 10 in
+    let abbrev_table_by_offset = ref (Hashtbl.create 20) in
 
     Array.iteri (fun i s ->
         if String.length s.section_name > 0 then begin
@@ -46,7 +47,7 @@ let _ =
             try
                 Hashtbl.find t_original !single_section
             with Not_found -> Printf.printf "error : section %s not found\n" !single_section; exit 1 in
-        let section_stream = Stream.of_string target_section in
+        let section_stream = Stream_in.of_string target_section in
 
         if !hex_flag then begin
             dump_hex target_section;
@@ -57,8 +58,10 @@ let _ =
             DwarfReader.read_CUs section_stream;
 
         if String.compare !single_section ".debug_abbrev" == 0 then
-            (*DwarfReader.read_abbrev_section section_stream*)
-            DwarfPrinter.string_of_abbrev_section (DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10))
+            abbrev_table_by_offset := DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10);
+            Hashtbl.iter (fun k v -> Printf.printf "abbrevs for offset %d\n" k;
+                                     DwarfPrinter.string_of_abbrev_section v;
+                                     Printf.printf "----------------------\n") !abbrev_table_by_offset
 
     end;
 

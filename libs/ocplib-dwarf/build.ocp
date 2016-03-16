@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 begin library "ocplib-dwarf"
-  files = [ "arch.ml" "optionMonad.ml" "stream_in.ml" "leb128.ml" "dwarfTypes.ml" "dwarfReader.ml" "dwarfPrinter.ml" ]
+  files = [ "arch.ml" "optionMonad.ml" "stream_in.ml" "leb128.ml" "dwarfTypes.ml" "dwarfPrinter.ml" "dwarfReader.ml" ]
   requires = [ "ocplib-elf" ]
 end
 

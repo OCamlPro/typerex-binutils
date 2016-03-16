@@ -16,5 +16,5 @@ open DwarfTypes
 
 type at = (int, dwarf_abbreviation) Hashtbl.t
 
-val read_CUs : char Stream.t -> unit
-val read_abbrev_section : char Stream.t -> at -> at
+val read_CUs : Stream_in.s -> unit
+val read_abbrev_section : Stream_in.s -> (int, at) Hashtbl.t -> (int, at) Hashtbl.t

@@ -103,7 +103,14 @@ let string_of_AT =
   | DW_AT_elemental ->"DW_AT_elemental"
   | DW_AT_pure ->"DW_AT_pure"
   | DW_AT_recursive ->"DW_AT_recursive"
+  | DW_AT_signature -> "DW_AT_signature"
+  | DW_AT_main_subprogram -> "DW_AT_main_subprogram"
+  | DW_AT_data_bit_offset -> "DW_AT_data_bit_offset"
+  | DW_AT_const_expr -> "DW_AT_const_expr"
+  | DW_AT_enum_class -> "DW_AT_enum_class"
+  | DW_AT_linkage_name -> "DW_AT_linkage_name"
   | DW_AT_user w ->"DW_AT_user"
+  | DW_AT_unk w -> Printf.sprintf "unknown DW_AT %Lu" w
 
 let string_of_FORM =
   function
@@ -128,6 +135,10 @@ let string_of_FORM =
   | DW_FORM_ref8 ->"DW_FORM_ref8"
   | DW_FORM_ref_udata ->"DW_FORM_ref_udata"
   | DW_FORM_indirect ->"DW_FORM_indirect"
+  | DW_FORM_sec_offset -> "DW_FORM_sec_offset"
+  | DW_FORM_exprloc -> "DW_FORM_exprloc"
+  | DW_FORM_flag_present -> "DW_FORM_flag_present"
+  | DW_FORM_ref_sig8 -> "DW_FORM_ref_sig8"
 
 let string_of_TAG =
   function
@@ -188,6 +199,7 @@ let string_of_TAG =
   | DW_TAG_imported_unit ->"DW_TAG_imported_unit"
   | DW_TAG_condition ->"DW_TAG_condition"
   | DW_TAG_shared_type ->"DW_TAG_shared_type"
+  | DW_TAG_user _ -> "DW_TAG_user"
 
 let string_of_abbrev_decl d =
     printf "Number TAG\n";
@@ -196,4 +208,4 @@ let string_of_abbrev_decl d =
     List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes; ()
 
 let string_of_abbrev_section tbl =
-    Hashtbl.iter (fun k v -> string_of_abbrev_decl v) tbl
+    Hashtbl.iter (fun k v -> string_of_abbrev_decl v; Printf.printf "\n") tbl

@@ -22,8 +22,16 @@
 
 open OptionMonad
 
+type s = { stream: char Stream.t; offset: int ref }
+
+let peek s = Stream.peek s.stream
+
+let junk s = Stream.junk s.stream; s.offset := !(s.offset) + 1
+
+let of_string s = { stream = Stream.of_string s; offset = ref 0; }
+
 let read_int8 s =
-    try Some (int_of_char (Stream.next s))
+    try let res = Some (int_of_char (Stream.next s.stream)) in s.offset := !(s.offset) + 1; res
     with Stream.Failure -> Printf.printf "empty stream\n"; None
 
 let read_int8_as_int32 s =

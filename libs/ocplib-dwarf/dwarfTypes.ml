@@ -123,6 +123,7 @@ type dwarf_TAG =
   | DW_TAG_imported_unit
   | DW_TAG_condition
   | DW_TAG_shared_type
+  | DW_TAG_user of Word64.t          (*   user extension *)
   (*| DW_TAG_type_unit*)
   (*| DW_TAG_rvalue_reference_type*)
   (*| DW_TAG_template_alias*)
@@ -214,7 +215,14 @@ type dwarf_AT  =
   | DW_AT_elemental            (*   flag *)
   | DW_AT_pure                 (*   flag *)
   | DW_AT_recursive            (*   flag *)
+  | DW_AT_signature            (*   reference *)
+  | DW_AT_main_subprogram      (*   flag *)
+  | DW_AT_data_bit_offset      (*   constant *)
+  | DW_AT_const_expr           (*   flag *)
+  | DW_AT_enum_class           (*   flag *)
+  | DW_AT_linkage_name         (*   string *)
   | DW_AT_user of Word64.t          (*   user extension *)
+  | DW_AT_unk of Word64.t
 
 type dwarf_FORM =
     DW_FORM_addr              (*   address *)
@@ -238,6 +246,10 @@ type dwarf_FORM =
   | DW_FORM_ref8                (*   reference *)
   | DW_FORM_ref_udata           (*   reference *)
   | DW_FORM_indirect            (*   (see Section 7.5.3 of DWARF3 specification) *)
+  | DW_FORM_sec_offset      (* lineptr, loclistptr, macptr, rangelistptr *)
+  | DW_FORM_exprloc         (* exprloc *)
+  | DW_FORM_flag_present    (* flag *)
+  | DW_FORM_ref_sig8        (* reference *)
 
 type dwarf_ATVAL =
     DW_ATVAL_INT of Int64.t
@@ -770,15 +782,14 @@ let dw_tag =
     | 0x3d -> DW_TAG_imported_unit
     | 0x3f -> DW_TAG_condition
     | 0x40 -> DW_TAG_shared_type
+    | n ->
+      if n >= dw_tag_lo_user && n <= dw_tag_hi_user then
+        DW_TAG_user (Int64.of_int n)
+      else
+        Printf.kprintf failwith "unknown DW_TAG %x" n
     (*| 0x41 -> DW_TAG_type_unit*)
     (*| 0x42 -> DW_TAG_rvalue_reference_type*)
     (*| 0x43 -> DW_TAG_template_alias*)
-    (*| n ->*)
-      (*if code >= dw_tag_lo_user && code <= dw_tag_hi_user then*)
-        (*Ok (User (Int16.of_int64_exn code))*)
-      (*else*)
-        (*Error (Printf.sprintf "bad DWARF tag %Ld" code)*)
-    | n -> Printf.kprintf failwith "unknown DW_TAG %x" n
 
 let dw_at =
   let dw_at_lo_user = 0x2000 in
@@ -868,15 +879,19 @@ let dw_at =
   | 0x64 -> DW_AT_object_pointer
   | 0x65 -> DW_AT_endianity
   | 0x66 -> DW_AT_elemental
-  | 0x67 -> DW_AT_pure
+  (*| 0x67 -> DW_AT_pure*)
   | 0x68 -> DW_AT_recursive
-  | n -> Printf.kprintf failwith "unknown DW_AT %x" n
-  (*| 0x69 -> DW_AT_signature*)
-  (*| 0x6a -> DW_AT_main_subprogram*)
-  (*| 0x6b -> DW_AT_data_bit_offset*)
-  (*| 0x6c -> DW_AT_const_expr*)
-  (*| 0x6d -> DW_AT_enum_class*)
-  (*| 0x6e -> DW_AT_linkage_name*)
+  | 0x69 -> DW_AT_signature
+  | 0x6a -> DW_AT_main_subprogram
+  | 0x6b -> DW_AT_data_bit_offset
+  | 0x6c -> DW_AT_const_expr
+  | 0x6d -> DW_AT_enum_class
+  | 0x6e -> DW_AT_linkage_name
+  | n ->
+      if n >= dw_at_lo_user && n <= dw_at_hi_user then
+        DW_AT_user (Int64.of_int n)
+      else
+        DW_AT_unk (Int64.of_int n)
 
 let dw_form =
   function
@@ -901,8 +916,8 @@ let dw_form =
   | 0x14 -> DW_FORM_ref8
   | 0x15 -> DW_FORM_ref_udata
   | 0x16 -> DW_FORM_indirect
+  | 0x17 -> DW_FORM_sec_offset
+  | 0x18 -> DW_FORM_exprloc
+  | 0x19 -> DW_FORM_flag_present
+  | 0x20 -> DW_FORM_ref_sig8
   | n -> Printf.kprintf failwith "unknown DW_FORM %x" n
-  (*| 0x17 -> DW_FORM_sec_offset*)
-  (*| 0x18 -> DW_FORM_exprloc*)
-  (*| 0x19 -> DW_FORM_flag_present*)
-  (*| 0x20 -> DW_FORM_iref_sig8*)
