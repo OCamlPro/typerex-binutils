@@ -45,27 +45,41 @@ let read_abbrev_declaration s decl_code =
         match (read_uleb128 s, read_uleb128 s) with
           Some(0), Some(0) -> []
           | Some(attr_name), Some(attr_form) -> (dw_at attr_name, dw_form attr_form) :: attr_helper s
-          (*| _, _ -> raise (Failure "cannot read attribute")*)
-          | _, _ -> []
-  in
+          | _, _ -> [] in
+    let tag = (begin match read_uleb128 s with Some(t) -> dw_tag t | _ -> raise (Failure "cannot read tag") end) in
+    let has_children = begin
+        match Stream_in.read_int8 s with
+        Some(0x01) -> true
+        | Some(0x00) -> false
+        | _ -> false
+        end in
     { abbrev_num = decl_code;
-      abbrev_tag = (begin match read_uleb128 s with Some(t) -> dw_tag t | _ -> raise (Failure "cannot read tag") end);
-      abbrev_has_children = begin match Stream_in.read_int8 s with Some(0x01) -> true | _ -> false end;
+      abbrev_tag = tag;
+      abbrev_has_children = has_children;
       abbrev_attributes = attr_helper s;
     }
 
 let rec read_abbrev_section s abbrev_tbl =
+  (*let offset = ref 0 in*)
+  (*let abbrev_tbl : at = Hashtbl.create 10 in*)
+  (*while Stream.peek s != None do*)
     let decl_code = read_uleb128 s in
+
+    begin
     match decl_code with
-    | Some(0) -> abbrev_tbl
-    (*| Some(c) -> begin*)
-             (*let abbrev_declaration = read_abbrev_declaration s (Int64.of_int c) in*)
-             (*Hashtbl.add abbrev_tbl c abbrev_declaration;*)
+    | Some(0) -> read_abbrev_section s abbrev_tbl (*put old map in abbrev map then create new map for next offset*)
+    | Some(c) -> begin
+             (*let new_abbrev_table_for_offset = Hashtbl.create 50 in*)
+             let abbrev_declaration = read_abbrev_declaration s (Int64.of_int c) in
+             (*read_abbrev_declaration s (Int64.of_int c);*)
+             Hashtbl.add abbrev_tbl c abbrev_declaration;
              (*abbrev_tbl*)
-             (*[>read_abbrev_section s abbrev_tbl<]*)
-           (*end*)
-    | Some (c) -> Printf.printf "%d\n" c; abbrev_tbl
-    | None -> raise (Failure "cannot read decl_code")
+             (*read_abbrev_section s abbrev_tbl*)
+           end
+    (*| Some (c) -> Printf.printf "%d\n" c;*)
+    | None -> abbrev_tbl
+    end
+  (*done*)
 
 let read_CUs s =
   let offset = ref 0 in

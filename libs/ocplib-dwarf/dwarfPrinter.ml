@@ -12,6 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Printf
 open DwarfTypes
 
 let string_of_AT =
@@ -189,11 +190,10 @@ let string_of_TAG =
   | DW_TAG_shared_type ->"DW_TAG_shared_type"
 
 let string_of_abbrev_decl d =
-    Printf.printf "Number TAG\n";
-    Printf.printf "%Ld" d.abbrev_num;
-    Printf.printf "%s\n" (string_of_TAG d.abbrev_tag);
-    if d.abbrev_has_children then Printf.printf "[has children]" else Printf.printf "[no children]";
-    List.map (fun (n,f) -> Printf.printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes; ()
+    printf "Number TAG\n";
+    printf "%Ld %s\n" d.abbrev_num (string_of_TAG d.abbrev_tag);
+    if d.abbrev_has_children then printf "[has children]\n" else printf "[no children]\n";
+    List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes; ()
 
 let string_of_abbrev_section tbl =
     Hashtbl.iter (fun k v -> string_of_abbrev_decl v) tbl
