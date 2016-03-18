@@ -47,9 +47,8 @@ type dwarf_format =
   | DWF_64BITS
 
 (* Section 7.21 - Line Number Information *)
-type dwarf_line_number_information =
-    DW_LNI_special of Word64.t * Int64.t
-  | DW_LNS_copy
+type dwarf_LNS_OPS =
+    DW_LNS_copy
   | DW_LNS_advance_pc of Word64.t
   | DW_LNS_advance_line of Int64.t
   | DW_LNS_set_file of Word64.t
@@ -61,9 +60,13 @@ type dwarf_line_number_information =
   | DW_LNS_set_prologue_end
   | DW_LNS_set_epilogue_begin
   | DW_LNS_set_isa of Word64.t
-  | DW_LNE_end_sequence
+
+type dwarf_LNE_OPS =
+    DW_LNE_end_sequence
   | DW_LNE_set_address of Word64.t
   | DW_LNE_define_file of string * Word64.t * Word64.t * Word64.t
+  | DW_LNE_set_discriminator of Word64.t
+  | DW_LNE_user of Word64.t
 
 type dwarf_TAG =
     DW_TAG_array_type
@@ -282,6 +285,20 @@ type dwarf_DIE =
       (* Attribute tag and value pairs. *)
       die_attributes   : (dwarf_AT * dwarf_ATVAL) list;
     }
+
+type dwarf_CU_LN_header =
+  { unit_length : int64;
+    version : int;
+    header_len : int64;
+    min_inst_len : int;
+    max_ops_per_inst : int;
+    default_is_stmt : int;
+    line_base : int;
+    line_range : int;
+    opcode_base : int;
+    standard_opcode_lengths : int list;
+    include_directories : string list;
+    file_names : (string * int * int * int) list; }
 
 type dwarf_line_number_expression =
     { lnm_address       : Word64.t;
@@ -921,3 +938,31 @@ let dw_form =
   | 0x19 -> DW_FORM_flag_present
   | 0x20 -> DW_FORM_ref_sig8
   | n -> Printf.kprintf failwith "unknown DW_FORM %x" n
+
+let dw_lns_ops =
+    function
+      | 0x01 -> DW_LNS_copy
+      | 0x02 -> DW_LNS_advance_pc Int64.zero
+      | 0x03 -> DW_LNS_advance_line Int64.zero
+      | 0x04 -> DW_LNS_set_file Int64.zero
+      | 0x05 -> DW_LNS_set_column Int64.zero
+      | 0x06 -> DW_LNS_negate_stmt
+      | 0x07 -> DW_LNS_set_basic_block
+      | 0x08 -> DW_LNS_const_add_pc Int64.zero
+      | 0x09 -> DW_LNS_fixed_advance_pc Int64.zero
+      | 0x0a -> DW_LNS_set_prologue_end
+      | 0x0b -> DW_LNS_set_epilogue_begin
+      | 0x0c -> DW_LNS_set_isa Int64.zero
+      | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n
+
+let dw_lne_ops =
+    let dw_lne_lo_user = 0x80 in
+    let dw_lne_hi_user = 0xff in
+    function
+      | 0x01 -> DW_LNE_end_sequence
+      | 0x02 -> DW_LNE_set_address Int64.zero
+      | 0x03 -> DW_LNE_define_file ("", Int64.zero, Int64.zero, Int64.zero)
+      | 0x04 -> DW_LNE_set_discriminator Int64.zero
+      | n -> if (n >= dw_lne_lo_user) && (n <= dw_lne_hi_user)
+             then DW_LNE_user (Int64.of_int n)
+             else Printf.kprintf failwith "unknown DW_LNE opcode %x" n

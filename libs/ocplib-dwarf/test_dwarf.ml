@@ -57,6 +57,9 @@ let _ =
         if String.compare !single_section ".debug_info" == 0 then
             DwarfReader.read_CUs section_stream;
 
+        if String.compare !single_section ".debug_line" == 0 then
+            DwarfReader.read_lineprog_section section_stream;
+
         if String.compare !single_section ".debug_abbrev" == 0 then
             abbrev_table_by_offset := DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10);
             Hashtbl.iter (fun k v -> Printf.printf "abbrevs for offset %d\n" k;

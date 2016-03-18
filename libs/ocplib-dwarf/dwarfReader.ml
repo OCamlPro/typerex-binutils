@@ -120,5 +120,103 @@ let read_CUs s =
       Printf.printf "now at offset %d\n" !offset;
       None
       end
-  done;
+  done
 
+
+let read_line_prog_header s =
+  let get_header_length s = match !(Flags.format) with
+    | DWF_32BITS -> Stream_in.read_int32 s >>= (fun i32 -> Some (Int64.of_int32 i32))
+    | DWF_64BITS -> Stream_in.read_int64 s in
+
+  let get_standard_opcode_lengths s op_b =
+      let rec helper cnt s = match cnt with 0 -> [] | _ -> match Stream_in.read_int8 s with Some(c) -> c :: helper (cnt - 1) s | _ -> [] in
+      Some(helper op_b s) in
+
+  let get_include_directories s =
+      let dirs = ref [] in
+      let exit = ref true in
+      while !exit do
+      match Stream_in.peek s with
+      | Some(0) -> let _ = Stream_in.read_int8 s in exit := false
+      | Some(c) -> dirs := (Stream_in.read_null_terminated_string s) :: !dirs
+      | None -> exit := false
+      done; Some(!dirs) in
+
+  let get_file_names s =
+      let entries = ref [] in
+      let exit = ref true in
+      while !exit do
+      match Stream_in.peek s with
+      | Some(0) -> let _ = Stream_in.read_int8 s in exit := false
+      | Some(c) -> begin
+                    let path = Stream_in.read_null_terminated_string s in
+                    let _ = read_uleb128 s
+                            >>= fun index ->
+                            read_uleb128 s
+                            >>= fun time ->
+                            read_uleb128 s
+                            >>= fun len ->
+                            entries := (path, index, time, len) :: !entries; None in ()
+                   end
+      | None -> exit := false
+      done; Some(!entries) in
+
+  get_initial_length s
+  >>= fun (dwarf_format, unit_length) ->
+  get_version s
+  >>= fun version ->
+  get_header_length s
+  >>= fun header_len ->
+  Stream_in.read_int8 s
+  >>= fun min_inst_len ->
+  (*Section 6.2.4 5. p113 DWARF 4*)
+  (*For non-VLIW architectures, this field is 1, the op_index register is always 0, and the*)
+  (*operation pointer is simply the address register.*)
+  (*Stream_in.read_int8 s*)
+  (*>>= fun max_ops_per_inst ->*)
+  Stream_in.read_int8 s
+  >>= fun default_is_stmt ->
+  Stream_in.read_int8 s
+  >>= fun line_base ->
+  Stream_in.read_int8 s
+  >>= fun line_range ->
+  Stream_in.read_int8 s
+  >>= fun opcode_base ->
+  get_standard_opcode_lengths s (opcode_base-1)
+  >>= fun standard_opcode_lengths ->
+  get_include_directories s
+  >>= fun include_directories ->
+  get_file_names s
+  >>= fun file_names ->
+  Some { unit_length = unit_length;
+    version = version;
+    header_len = header_len;
+    min_inst_len = min_inst_len;
+    max_ops_per_inst = 1;
+    default_is_stmt = default_is_stmt;
+    line_base = line_base;
+    line_range = line_range;
+    opcode_base = opcode_base;
+    standard_opcode_lengths = standard_opcode_lengths;
+    include_directories = include_directories;
+    file_names = file_names; }
+
+let read_line_prog_stmts s h =
+    let read_extended_opcode s = () in
+    let read_standard_opcode opc s = () in
+    let read_special_opcode s = () in
+    let exit = ref true in
+    while !exit do
+    match Stream_in.read_int8 s with
+    | Some(0) -> read_extended_opcode s
+    | Some(c) when c > 0 && c < h.opcode_base -> read_standard_opcode c s
+    | Some(c) when c >= h.opcode_base -> read_special_opcode s
+    | Some(c) -> exit := false;
+    | None -> exit := false;
+    done
+
+  (*.debug_line*)
+let read_lineprog_section s =
+  let _ = read_line_prog_header s >>=
+  fun header ->
+      string_of_lineprog_header header; read_line_prog_stmts s header; None in ()

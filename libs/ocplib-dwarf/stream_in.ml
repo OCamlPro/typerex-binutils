@@ -24,7 +24,7 @@ open OptionMonad
 
 type s = { stream: char Stream.t; offset: int ref }
 
-let peek s = Stream.peek s.stream
+let peek s = match Stream.peek s.stream with Some(c) -> Some(int_of_char c) | None -> None
 
 let junk s = Stream.junk s.stream; s.offset := !(s.offset) + 1
 
@@ -120,5 +120,5 @@ let read_null_terminated_string t =
     | Some c -> Buffer.add_char buf (Char.chr c)
   done;
   match !result with
-    | Some (r) -> r
-    | None -> Printf.printf "error\n"; None
+    | Some (r) -> begin match r with Some(s) -> s | None -> "" end
+    | None -> Printf.printf "error\n"; ""

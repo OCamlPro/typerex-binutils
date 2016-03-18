@@ -202,10 +202,38 @@ let string_of_TAG =
   | DW_TAG_user _ -> "DW_TAG_user"
 
 let string_of_abbrev_decl d =
-    printf "Number TAG\n";
-    printf "%Ld %s\n" d.abbrev_num (string_of_TAG d.abbrev_tag);
-    if d.abbrev_has_children then printf "[has children]\n" else printf "[no children]\n";
-    List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes; ()
+  printf "Number TAG\n";
+  printf "%Ld %s\n" d.abbrev_num (string_of_TAG d.abbrev_tag);
+  if d.abbrev_has_children then printf "[has children]\n" else printf "[no children]\n";
+  let _ = List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes in ()
 
 let string_of_abbrev_section tbl =
-    Hashtbl.iter (fun k v -> string_of_abbrev_decl v; Printf.printf "\n") tbl
+  Hashtbl.iter (fun k v -> string_of_abbrev_decl v; printf "\n") tbl
+
+let string_of_lineprog_header h =
+  printf "Length : %Lu\n" h.unit_length;
+  printf "Version : %d\n" h.version;
+  printf "header len : %Lu\n" h.header_len;
+
+  printf "min_inst_len : %d\n" h.min_inst_len;
+  printf "max_ops_per_inst : %d\n" h.max_ops_per_inst;
+  printf "default_is_stmt : %d\n" h.default_is_stmt;
+
+  printf "line_base (signed): 0x%x\n" h.line_base;
+  printf "line_range : %d\n" h.line_range;
+  printf "opcode_base: %d\n" h.opcode_base;
+
+  printf "opcodes : \n";
+  List.iteri (fun i a -> printf "opcode %d has %d arguments\n" (i+1) a) h.standard_opcode_lengths;
+
+  if h.include_directories == []
+  then printf "The Directory Table is empty.\n"
+  else List.iteri (fun i a -> printf "%d\t%s\n" (i+1) a) h.include_directories;
+
+  if h.file_names == []
+  then printf "The File Name Table is empty.\n"
+  else begin
+      printf "The File Name Table:\n";
+      printf "Entry\tDir\tTime\tSize\tName\n";
+      List.iteri (fun i (a,b,c,d) -> printf "%d\t%d\t%d\t%d\t%s\n" (i+1) d c b a) h.file_names
+  end
