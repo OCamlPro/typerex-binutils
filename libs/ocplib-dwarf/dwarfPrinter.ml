@@ -235,5 +235,30 @@ let string_of_lineprog_header h =
   else begin
       printf "The File Name Table:\n";
       printf "Entry\tDir\tTime\tSize\tName\n";
-      List.iteri (fun i (a,b,c,d) -> printf "%d\t%d\t%d\t%d\t%s\n" (i+1) d c b a) h.file_names
+      List.iteri (fun i (a,b,c,d) -> printf "%d\t%d\t%d\t%d\t%s\n" (i+1) b c d a) h.file_names
   end
+
+let string_of_op =
+    function
+    DW_LNS_copy -> sprintf "DW_LNS_copy \n"
+  | DW_LNS_advance_pc n -> sprintf "DW_LNS_advance_pc 0x%Lx \n" n
+  | DW_LNS_advance_line n -> sprintf "DW_LNS_advance_line (signed) 0x%Lx \n" n
+  | DW_LNS_set_file n -> sprintf "DW_LNS_set_file %Lu \n" n
+  | DW_LNS_set_column n -> sprintf "DW_LNS_set_column %Lu \n" n
+  | DW_LNS_negate_stmt -> sprintf "DW_LNS_negate_stmt \n"
+  | DW_LNS_set_basic_block -> sprintf "DW_LNS_set_basic_block \n"
+  | DW_LNS_const_add_pc n -> sprintf "DW_LNS_const_add_pc %Lu \n" n
+  | DW_LNS_fixed_advance_pc n -> sprintf "DW_LNS_fixed_advance_pc %Lu \n" n
+  | DW_LNS_set_prologue_end -> sprintf "DW_LNS_set_prologue_end \n"
+  | DW_LNS_set_epilogue_begin -> sprintf "DW_LNS_set_epilogue_begin \n"
+  | DW_LNS_set_isa n -> sprintf "DW_LNS_set_isa %Lu \n" n
+  | DW_LNE_end_sequence -> sprintf "DW_LNE_end_sequence \n"
+  | DW_LNE_set_address n -> sprintf "DW_LNE_set_address 0x%Lx \n" n
+  | DW_LNE_define_file (s, a, b, c) -> sprintf "DW_LNE_define_file %s %Lu %Lu %Lu \n" s a b c
+  | DW_LNE_set_discriminator n -> sprintf "DW_LNE_set_discriminator %Lu \n" n
+  | DW_LNE_user n -> sprintf "DW_LNE_user %Lu \n" n
+  | DW_LN_spe_op -> sprintf "DW_LN_spe_op \n"
+
+let string_of_lineprg l =
+    printf "Line Number Statements: %d\n" (List.length l);
+    List.iteri (fun i op -> printf "%s" (string_of_op op)) l

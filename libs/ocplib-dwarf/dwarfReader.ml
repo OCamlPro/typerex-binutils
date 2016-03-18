@@ -201,22 +201,85 @@ let read_line_prog_header s =
     include_directories = include_directories;
     file_names = file_names; }
 
-let read_line_prog_stmts s h =
-    let read_extended_opcode s = () in
-    let read_standard_opcode opc s = () in
-    let read_special_opcode s = () in
+let read_line_prog_stmts s h ofs =
+    let read_uleb128 s = match Leb128.read_uleb128 s with
+       | Some(i) -> Int64.of_int i
+       | None -> Printf.kprintf failwith "pblm" in
+
+    let read_sleb128 s = match Leb128.read_sleb128 s with
+       | Some(i) -> i
+       | None -> Printf.kprintf failwith "pblm" in
+
+    let read_int8 s = match Stream_in.read_int8 s with
+       | Some(i) -> i
+       | None -> Printf.kprintf failwith "pblm" in
+
+    let read_int16 s = match Stream_in.read_int16 s with
+       | Some(i) -> Int64.of_int i
+       | None -> Printf.kprintf failwith "pblm" in
+
+    let read_int32 s = match Stream_in.read_int32 s with
+       | Some(i) -> Int64.of_int32 i
+       | None -> Printf.kprintf failwith "pblm" in
+
+    let read_int64 s = match Stream_in.read_int64 s with
+       | Some(i) -> i
+       | None -> Printf.kprintf failwith "pblm" in
+
+    let read_extended_opcode op s ofs_end =
+        let dw_lne_lo_user = 0x80 in
+        let dw_lne_hi_user = 0xff in
+        let end_ins = !(s.offset) + ofs_end in
+        let res = match op with
+          | 0x01 -> DW_LNE_end_sequence
+          | 0x02 -> DW_LNE_set_address (if !(Flags.address_size_on_target) == 4 then read_int32 s else read_int64 s)
+          | 0x03 -> DW_LNE_define_file ("", read_uleb128 s, read_uleb128 s, read_uleb128 s)
+          | 0x04 -> DW_LNE_set_discriminator (read_uleb128 s)
+          | n -> if (n >= dw_lne_lo_user) && (n <= dw_lne_hi_user)
+                 then DW_LNE_user (Int64.of_int n)
+                 else Printf.kprintf failwith "unknown DW_LNE opcode %x" n in
+        while !(s.offset) < end_ins do read_int8 s done; res in
+
+    let read_standard_opcode opc s =
+        match opc with
+          | 0x01 -> DW_LNS_copy
+          | 0x02 -> DW_LNS_advance_pc (read_uleb128 s)
+          | 0x03 -> DW_LNS_advance_line (read_sleb128 s)
+          | 0x04 -> DW_LNS_set_file (read_uleb128 s)
+          | 0x05 -> DW_LNS_set_column (read_uleb128 s)
+          | 0x06 -> DW_LNS_negate_stmt
+          | 0x07 -> DW_LNS_set_basic_block
+          | 0x08 -> DW_LNS_const_add_pc (read_uleb128 s)
+          | 0x09 -> DW_LNS_fixed_advance_pc (read_int16 s)
+          | 0x0a -> DW_LNS_set_prologue_end
+          | 0x0b -> DW_LNS_set_epilogue_begin
+          | 0x0c -> DW_LNS_set_isa (read_uleb128 s)
+          | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n
+    in
+    let read_special_opcode s = DW_LN_spe_op in
     let exit = ref true in
+    let res = ref [] in
     while !exit do
+    if !(s.offset) >= ofs then exit := false else begin
     match Stream_in.read_int8 s with
-    | Some(0) -> read_extended_opcode s
-    | Some(c) when c > 0 && c < h.opcode_base -> read_standard_opcode c s
-    | Some(c) when c >= h.opcode_base -> read_special_opcode s
+    | Some(0) -> let ins_len = read_uleb128 s in
+                 let ext_opc = read_int8 s in
+                 res := !res @ [read_extended_opcode ext_opc s (Int64.to_int (ins_len)-1)]
+    | Some(c) when c > 0 && c < h.opcode_base -> res := !res @ [read_standard_opcode c s]
+    | Some(c) when c >= h.opcode_base -> res := !res @ [read_special_opcode s]
     | Some(c) -> exit := false;
     | None -> exit := false;
-    done
+    end;
+    done;
+    !res
 
-  (*.debug_line*)
 let read_lineprog_section s =
-  let _ = read_line_prog_header s >>=
+  let exit = ref true in
+  while Stream_in.peek s != None do
+  read_line_prog_header s >>=
   fun header ->
-      string_of_lineprog_header header; read_line_prog_stmts s header; None in ()
+      string_of_lineprog_header header;
+      let end_offset = Int64.to_int (header.unit_length) + (if !Flags.format == DWF_32BITS then 4 else 12) in
+      let ln = read_line_prog_stmts s header end_offset in string_of_lineprg ln; None
+  done
+

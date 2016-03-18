@@ -8,7 +8,7 @@ let read_sleb128 s =
     let lower_7_bits = Int64.of_int (i land 0x7f) in
     let result = Int64.logor result (Int64.shift_left lower_7_bits shift) in
     let shift = shift + 7 in
-    let sign_bit_set = i lor 0x40 <> 0 in
+    let sign_bit_set = i land 0x40 <> 0 in
     if i < 128 then Some(result, shift, sign_bit_set)
     else hparse ~result ~shift
   in
