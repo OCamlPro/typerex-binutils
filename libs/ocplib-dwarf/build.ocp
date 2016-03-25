@@ -13,8 +13,8 @@
 (**************************************************************************)
 
 begin library "ocplib-dwarf"
-  files = [ "arch.ml" "optionMonad.ml" "stream_in.ml" "leb128.ml" "dwarfTypes.ml" "flags.ml" "dwarfPrinter.ml" "dwarfReader.ml" ]
-  requires = [ "ocplib-elf" ]
+  files = [ "arch.ml" "dwarfUtils.ml" "optionMonad.ml" "stream_in.ml" "leb128.ml" "dwarfTypes.ml" "flags.ml" "dwarfPrinter.ml" "dwarfReader.ml" ]
+  requires = [ "ocplib-elf" "ocplib-endian" ]
 end
 
 begin library "ocplib-xxd"
