@@ -211,38 +211,46 @@ let string_of_abbrev_section tbl =
   Hashtbl.iter (fun k v -> string_of_abbrev_decl v; printf "\n") tbl
 
 let string_of_lineprog_header h =
-  printf "Length : %Lu\n" h.unit_length;
-  printf "Version : %d\n" h.version;
-  printf "header len : %Lu\n" h.header_len;
+  printf "  Offset: %22s%x\n" "0x" h.header_offset;
+  printf "  Length: %23Lu\n" h.unit_length;
+  printf "  DWARF Version: %14d\n" h.version;
+  printf "  Prologue length: %13Lu\n" h.header_len;
 
-  printf "min_inst_len : %d\n" h.min_inst_len;
-  printf "max_ops_per_inst : %d\n" h.max_ops_per_inst;
-  printf "default_is_stmt : %d\n" h.default_is_stmt;
+  printf "  Minimum Instruction Length: %d\n" h.min_inst_len;
+  (*printf "max_ops_per_inst : %d\n" h.max_ops_per_inst;*)
+  printf "  Initial value of 'is_stmt': %d\n" h.default_is_stmt;
 
-  printf "line_base (signed): 0x%x\n" h.line_base;
-  printf "line_range : %d\n" h.line_range;
-  printf "opcode_base: %d\n" h.opcode_base;
+  printf "  Line Base: %19d\n" (DwarfUtils.uint8_to_int8 h.line_base);
+  printf "  Line Range: %18d\n" h.line_range;
+  printf "  Opcode Base: %17d\n" h.opcode_base;
+  print_endline "";
 
-  printf "opcodes : \n";
-  List.iteri (fun i a -> printf "opcode %d has %d arguments\n" (i+1) a) h.standard_opcode_lengths;
+  print_endline " Opcodes:";
+  List.iteri (fun i a -> printf "  Opcode %d has %d args\n" (i+1) a) h.standard_opcode_lengths;
+  print_endline "";
 
   if h.include_directories == []
-  then printf "The Directory Table is empty.\n"
-  else List.iteri (fun i a -> printf "%d\t%s\n" (i+1) a) h.include_directories;
+  then print_endline "The Directory Table is empty.\n"
+  else begin
+      print_endline " The Directory Table:";
+      List.iteri (fun i a -> printf "  %d\t%s\n" (i+1) a) h.include_directories;
+      print_endline ""
+  end;
 
   if h.file_names == []
   then printf "The File Name Table is empty.\n"
   else begin
-      printf "The File Name Table:\n";
-      printf "Entry\tDir\tTime\tSize\tName\n";
-      List.iteri (fun i (a,b,c,d) -> printf "%d\t%d\t%d\t%d\t%s\n" (i+1) b c d a) h.file_names
+      print_endline " The File Name Table:";
+      printf "  Entry\tDir\tTime\tSize\tName\n";
+      List.iteri (fun i (a,b,c,d) -> printf "  %d\t%d\t%d\t%d\t%s\n" (i+1) b c d a) h.file_names;
+      print_endline "";
   end
 
 let string_of_op =
     function
     DW_LNS_copy -> sprintf "DW_LNS_copy \n"
-  | DW_LNS_advance_pc n -> sprintf "DW_LNS_advance_pc 0x%Lx \n" n
-  | DW_LNS_advance_line n -> sprintf "DW_LNS_advance_line (signed) 0x%Lx \n" n
+  | DW_LNS_advance_pc n -> sprintf "DW_LNS_advance_pc by %Ld to\n" n
+  | DW_LNS_advance_line n -> sprintf "DW_LNS_advance_line %d \n" (Int64.to_int n)
   | DW_LNS_set_file n -> sprintf "DW_LNS_set_file %Lu \n" n
   | DW_LNS_set_column n -> sprintf "DW_LNS_set_column %Lu \n" n
   | DW_LNS_negate_stmt -> sprintf "DW_LNS_negate_stmt \n"
@@ -260,5 +268,6 @@ let string_of_op =
   | DW_LN_spe_op -> sprintf "DW_LN_spe_op \n"
 
 let string_of_lineprg l =
-    printf "Line Number Statements: %d\n" (List.length l);
-    List.iteri (fun i (ofs,op) -> printf "[offset 0x%x] %s" ofs (string_of_op op)) l
+    print_endline "Line Number Statements:";
+    List.iteri (fun i (ofs,op) -> printf "  [0x%08x]  %s" ofs (string_of_op op)) l;
+    print_endline "\n"

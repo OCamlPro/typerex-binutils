@@ -25,3 +25,7 @@ let read_uint16 = wrap LE.get_uint16 BE.get_uint16 2
 let read_int32 = wrap LE.get_int32 BE.get_int32 4
 
 let read_int64 = wrap LE.get_int64 BE.get_int64 8
+
+let uint8_to_int8 x =
+    let shift = Sys.word_size - 8 - 1 in
+    (x lsl shift) asr shift

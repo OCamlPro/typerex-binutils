@@ -124,6 +124,7 @@ let read_CUs s =
 
 
 let read_line_prog_header s =
+  let header_offset = !(s.offset) in
   let get_header_length s = match !(Flags.format) with
     | DWF_32BITS -> Stream_in.read_int32 s >>= (fun i32 -> Some (Int64.of_int32 i32))
     | DWF_64BITS -> Stream_in.read_int64 s in
@@ -188,7 +189,9 @@ let read_line_prog_header s =
   >>= fun include_directories ->
   get_file_names s
   >>= fun file_names ->
-  Some { unit_length = unit_length;
+  Some {
+    header_offset = header_offset;
+    unit_length = unit_length;
     version = version;
     header_len = header_len;
     min_inst_len = min_inst_len;
@@ -306,16 +309,16 @@ let read_line_prog_stmts s h =
                  let ext_opc = read_int8 s in
                  let result = read_extended_opcode ext_opc s (Int64.to_int (ins_len)-1) in
                  res := !res @ [(curr_offset, result)];
-                 begin match ext_opc with 0x01 -> exit := false; print_endline "met end of seq" | _ -> () end
+                 begin match ext_opc with 0x01 -> exit := false | _ -> () end
     | Some(c) when c > 0 && c < h.opcode_base -> res := !res @ [(curr_offset, read_standard_opcode c s)]
     | Some(c) when c >= h.opcode_base -> res := !res @ [(curr_offset, read_special_opcode !curr_state c)]
-    | Some(c) -> Printf.printf "died on %d\n" c; exit := false;
-    | None -> print_endline "reached eos\n"; exit := false;
+    | Some(c) -> exit := false;
+    | None -> exit := false;
     done;
     !res
 
 let read_lineprog_section s =
-  let exit = ref true in
+  print_endline "Raw dump of debug contents of section .debug_line:\n";
   while Stream_in.peek s != None do
   read_line_prog_header s >>=
   fun header ->

@@ -286,7 +286,9 @@ type dwarf_DIE =
     }
 
 type dwarf_CU_LN_header =
-  { unit_length : int64;
+  {
+    header_offset : int;
+    unit_length : int64;
     version : int;
     header_len : int64;
     min_inst_len : int;
