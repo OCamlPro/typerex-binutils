@@ -250,7 +250,10 @@ let read_line_prog_stmts s h ofs =
           | 0x05 -> DW_LNS_set_column (read_uleb128 s)
           | 0x06 -> DW_LNS_negate_stmt
           | 0x07 -> DW_LNS_set_basic_block
-          | 0x08 -> DW_LNS_const_add_pc (read_uleb128 s)
+          | 0x08 ->
+                  let adjusted_opcode = 255 - h.opcode_base in
+                  let address_addend = ((adjusted_opcode / h.line_range) * h.min_inst_len) in
+                  DW_LNS_const_add_pc address_addend
           | 0x09 -> DW_LNS_fixed_advance_pc (read_int16 s)
           | 0x0a -> DW_LNS_set_prologue_end
           | 0x0b -> DW_LNS_set_epilogue_begin

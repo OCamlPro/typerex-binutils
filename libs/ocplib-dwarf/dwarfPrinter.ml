@@ -247,7 +247,7 @@ let string_of_op =
   | DW_LNS_set_column n -> sprintf "DW_LNS_set_column %Lu \n" n
   | DW_LNS_negate_stmt -> sprintf "DW_LNS_negate_stmt \n"
   | DW_LNS_set_basic_block -> sprintf "DW_LNS_set_basic_block \n"
-  | DW_LNS_const_add_pc n -> sprintf "DW_LNS_const_add_pc %Lu \n" n
+  | DW_LNS_const_add_pc n -> sprintf "DW_LNS_const_add_pc %d \n" n
   | DW_LNS_fixed_advance_pc n -> sprintf "DW_LNS_fixed_advance_pc %Lu \n" n
   | DW_LNS_set_prologue_end -> sprintf "DW_LNS_set_prologue_end \n"
   | DW_LNS_set_epilogue_begin -> sprintf "DW_LNS_set_epilogue_begin \n"

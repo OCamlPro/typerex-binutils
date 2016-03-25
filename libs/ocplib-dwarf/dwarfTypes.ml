@@ -55,7 +55,7 @@ type dwarf_LN_OPS =
   | DW_LNS_set_column of Word64.t
   | DW_LNS_negate_stmt
   | DW_LNS_set_basic_block
-  | DW_LNS_const_add_pc of Word64.t
+  | DW_LNS_const_add_pc of int
   | DW_LNS_fixed_advance_pc of Word64.t
   | DW_LNS_set_prologue_end
   | DW_LNS_set_epilogue_begin
