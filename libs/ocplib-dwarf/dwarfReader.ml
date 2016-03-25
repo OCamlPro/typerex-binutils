@@ -201,7 +201,7 @@ let read_line_prog_header s =
     include_directories = include_directories;
     file_names = file_names; }
 
-let read_line_prog_stmts s h ofs =
+let read_line_prog_stmts s h =
     let read_uleb128 s = match Leb128.read_uleb128 s with
        | Some(i) -> Int64.of_int i
        | None -> Printf.kprintf failwith "pblm" in
@@ -264,13 +264,13 @@ let read_line_prog_stmts s h ofs =
     let res = ref [] in
 
     while !exit do
-    if !(s.offset) >= ofs then exit := false else begin
     let curr_offset = !(s.offset) in
     match Stream_in.read_int8 s with
     | Some(0) -> let ins_len = read_uleb128 s in
                  let ext_opc = read_int8 s in
                  let result = read_extended_opcode ext_opc s (Int64.to_int (ins_len)-1) in
-                 res := !res @ [(curr_offset, result)]
+                 res := !res @ [(curr_offset, result)];
+                 begin match ext_opc with 0x01 -> exit := false; print_endline "met end of seq" | _ -> () end
     | Some(c) when c > 0 && c < h.opcode_base -> res := !res @ [(curr_offset, read_standard_opcode c s)]
     | Some(c) when c >= h.opcode_base -> res := !res @ [(curr_offset, read_special_opcode s)]
     | Some(c) -> exit := false;
@@ -285,7 +285,6 @@ let read_lineprog_section s =
   read_line_prog_header s >>=
   fun header ->
       string_of_lineprog_header header;
-      let end_offset = Int64.to_int (header.unit_length) + (if !Flags.format == DWF_32BITS then 4 else 12) in
-      let ln = read_line_prog_stmts s header end_offset in string_of_lineprg ln; None
+      let ln = read_line_prog_stmts s header in string_of_lineprg ln; None
   done
 
