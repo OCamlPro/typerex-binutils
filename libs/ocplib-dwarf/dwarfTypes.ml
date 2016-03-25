@@ -299,18 +299,19 @@ type dwarf_CU_LN_header =
     include_directories : string list;
     file_names : (string * int * int * int) list; }
 
-type dwarf_line_number_expression =
-    { lnm_address       : Word64.t;
-      lnm_file          : Word64.t;
-      lnm_line          : Word64.t;
-      lnm_column        : Word64.t;
-      lnm_statement     : bool;
-      lnm_basicblock    : bool;
-      lnm_end_sequence   : bool;
-      lnm_prologue_end   : bool;
-      lnm_epilogue_begin : bool;
-      lnm_ISA           : Word64.t;
-      lnm_files         : (string * Word64.t * Word64.t * Word64.t) list;
+type dwarf_line_number_state =
+    { mutable address       : int;
+      mutable file          : int;
+      mutable op_index      : int;
+      mutable line          : int;
+      mutable column        : int;
+      mutable is_stmt       : int;
+      mutable basic_block    : bool;
+      mutable end_sequence   : bool;
+      mutable prologue_end   : bool;
+      mutable epilogue_begin : bool;
+      mutable isa           : int;
+      mutable discriminator : int;
     }
 
 (*  Section 7.21 - Macro Information *)
@@ -613,26 +614,6 @@ type dwarf_ORD =
 type dwarf_DSC =
     DW_DSC_label
   | DW_DSC_range
-
-(*type t = ()*)
-
-
-
-
-
-let default_LNE is_stmt =
-  { lnm_address       = 0L;
-    lnm_file          = 1L;
-    lnm_line          = 1L;
-    lnm_column        = 0L;
-    lnm_statement     = is_stmt;
-    lnm_basicblock    = false;
-    lnm_end_sequence   = false;
-    lnm_prologue_end   = false;
-    lnm_epilogue_begin = false;
-    lnm_ISA           = 0L;
-    lnm_files         = [];
-  }
 
 let dw_ate = function
   | 0x01 -> DW_ATE_address

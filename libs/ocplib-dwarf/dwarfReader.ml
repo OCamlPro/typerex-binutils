@@ -226,6 +226,23 @@ let read_line_prog_stmts s h =
        | Some(i) -> i
        | None -> Printf.kprintf failwith "pblm" in
 
+    let blank_state =
+    {  address = 0;
+       file = 1;
+       op_index = 0;
+       line = 1;
+       column = 0;
+       is_stmt = h.default_is_stmt;
+       basic_block = false;
+       end_sequence = false;
+       prologue_end = false;
+       epilogue_begin = false;
+       isa = 0;
+       discriminator = 0;
+    } in
+
+    let curr_state = ref blank_state in
+
     let read_extended_opcode op s ofs_end =
         let dw_lne_lo_user = 0x80 in
         let dw_lne_hi_user = 0xff in
@@ -258,7 +275,26 @@ let read_line_prog_stmts s h =
           | 0x0c -> DW_LNS_set_isa (read_uleb128 s)
           | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n in
 
-    let read_special_opcode s = DW_LN_spe_op in
+    let add_entry_new_state state opc args =
+        state.basic_block <- false;
+        state.prologue_end <- false;
+        state.epilogue_begin <- false;
+        state.discriminator <- 0 in
+
+    let read_special_opcode state opcode =
+        let maximum_operations_per_instruction = h.max_ops_per_inst in
+        let adjusted_opcode = opcode - h.opcode_base in
+        let operation_advance = adjusted_opcode / h.line_range in
+        let address_addend = (
+            h.min_inst_len *
+                        ((state.op_index + operation_advance) /
+                          maximum_operations_per_instruction)) in
+        state.address <- state.address + address_addend;
+        state.op_index <- (state.op_index + operation_advance) mod maximum_operations_per_instruction;
+        let line_addend = h.line_base + (adjusted_opcode mod h.line_range) in
+        state.line <- state.line + line_addend;
+        add_entry_new_state !curr_state opcode [line_addend; address_addend; state.op_index];
+        DW_LN_spe_op in
 
     let exit = ref true in
     let res = ref [] in
@@ -272,10 +308,9 @@ let read_line_prog_stmts s h =
                  res := !res @ [(curr_offset, result)];
                  begin match ext_opc with 0x01 -> exit := false; print_endline "met end of seq" | _ -> () end
     | Some(c) when c > 0 && c < h.opcode_base -> res := !res @ [(curr_offset, read_standard_opcode c s)]
-    | Some(c) when c >= h.opcode_base -> res := !res @ [(curr_offset, read_special_opcode s)]
-    | Some(c) -> exit := false;
-    | None -> exit := false;
-    end;
+    | Some(c) when c >= h.opcode_base -> res := !res @ [(curr_offset, read_special_opcode !curr_state c)]
+    | Some(c) -> Printf.printf "died on %d\n" c; exit := false;
+    | None -> print_endline "reached eos\n"; exit := false;
     done;
     !res
 
