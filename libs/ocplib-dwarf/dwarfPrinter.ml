@@ -261,4 +261,4 @@ let string_of_op =
 
 let string_of_lineprg l =
     printf "Line Number Statements: %d\n" (List.length l);
-    List.iteri (fun i op -> printf "%s" (string_of_op op)) l
+    List.iteri (fun i (ofs,op) -> printf "[offset 0x%x] %s" ofs (string_of_op op)) l

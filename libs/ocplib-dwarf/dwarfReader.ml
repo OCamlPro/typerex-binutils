@@ -237,11 +237,12 @@ let read_line_prog_stmts s h ofs =
           | 0x04 -> DW_LNE_set_discriminator (read_uleb128 s)
           | n -> if (n >= dw_lne_lo_user) && (n <= dw_lne_hi_user)
                  then DW_LNE_user (Int64.of_int n)
-                 else Printf.kprintf failwith "unknown DW_LNE opcode %x" n in
-        while !(s.offset) < end_ins do read_int8 s done; res in
+                 else Printf.kprintf failwith "unknown DW_LNE opcode %x" n in res in
+        (*while !(s.offset) < end_ins do read_int8 s done; res in*)
 
     let read_standard_opcode opc s =
-        match opc with
+        (*let curr_offset = !(s.offset) in*)
+        let res = match opc with
           | 0x01 -> DW_LNS_copy
           | 0x02 -> DW_LNS_advance_pc (read_uleb128 s)
           | 0x03 -> DW_LNS_advance_line (read_sleb128 s)
@@ -255,18 +256,24 @@ let read_line_prog_stmts s h ofs =
           | 0x0b -> DW_LNS_set_epilogue_begin
           | 0x0c -> DW_LNS_set_isa (read_uleb128 s)
           | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n
-    in
+        in res in
+    (*in (curr_offset, res) in*)
+
     let read_special_opcode s = DW_LN_spe_op in
+
     let exit = ref true in
     let res = ref [] in
+
     while !exit do
     if !(s.offset) >= ofs then exit := false else begin
+    let curr_offset = !(s.offset) in
     match Stream_in.read_int8 s with
     | Some(0) -> let ins_len = read_uleb128 s in
                  let ext_opc = read_int8 s in
-                 res := !res @ [read_extended_opcode ext_opc s (Int64.to_int (ins_len)-1)]
-    | Some(c) when c > 0 && c < h.opcode_base -> res := !res @ [read_standard_opcode c s]
-    | Some(c) when c >= h.opcode_base -> res := !res @ [read_special_opcode s]
+                 let result = read_extended_opcode ext_opc s (Int64.to_int (ins_len)-1) in
+                 res := !res @ [(curr_offset, result)]
+    | Some(c) when c > 0 && c < h.opcode_base -> res := !res @ [(curr_offset, read_standard_opcode c s)]
+    | Some(c) when c >= h.opcode_base -> res := !res @ [(curr_offset, read_special_opcode s)]
     | Some(c) -> exit := false;
     | None -> exit := false;
     end;
