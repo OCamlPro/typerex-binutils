@@ -230,19 +230,17 @@ let read_line_prog_stmts s h ofs =
         let dw_lne_lo_user = 0x80 in
         let dw_lne_hi_user = 0xff in
         let end_ins = !(s.offset) + ofs_end in
-        let res = match op with
+        match op with
           | 0x01 -> DW_LNE_end_sequence
           | 0x02 -> DW_LNE_set_address (if !(Flags.address_size_on_target) == 4 then read_int32 s else read_int64 s)
           | 0x03 -> DW_LNE_define_file ("", read_uleb128 s, read_uleb128 s, read_uleb128 s)
           | 0x04 -> DW_LNE_set_discriminator (read_uleb128 s)
           | n -> if (n >= dw_lne_lo_user) && (n <= dw_lne_hi_user)
                  then DW_LNE_user (Int64.of_int n)
-                 else Printf.kprintf failwith "unknown DW_LNE opcode %x" n in res in
-        (*while !(s.offset) < end_ins do read_int8 s done; res in*)
+                 else Printf.kprintf failwith "unknown DW_LNE opcode %x" n in
 
     let read_standard_opcode opc s =
-        (*let curr_offset = !(s.offset) in*)
-        let res = match opc with
+        match opc with
           | 0x01 -> DW_LNS_copy
           | 0x02 -> DW_LNS_advance_pc (read_uleb128 s)
           | 0x03 -> DW_LNS_advance_line (read_sleb128 s)
@@ -258,9 +256,7 @@ let read_line_prog_stmts s h ofs =
           | 0x0a -> DW_LNS_set_prologue_end
           | 0x0b -> DW_LNS_set_epilogue_begin
           | 0x0c -> DW_LNS_set_isa (read_uleb128 s)
-          | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n
-        in res in
-    (*in (curr_offset, res) in*)
+          | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n in
 
     let read_special_opcode s = DW_LN_spe_op in
 
