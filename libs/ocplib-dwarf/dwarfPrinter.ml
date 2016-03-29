@@ -249,23 +249,23 @@ let string_of_lineprog_header h =
 let string_of_op =
     function
     DW_LNS_copy -> sprintf "DW_LNS_copy \n"
-  | DW_LNS_advance_pc n -> sprintf "DW_LNS_advance_pc by %Ld to\n" n
-  | DW_LNS_advance_line n -> sprintf "DW_LNS_advance_line %d \n" (Int64.to_int n)
+  | DW_LNS_advance_pc (n, adr) -> sprintf "DW_LNS_advance_pc by %d to 0x%x\n" n adr
+  | DW_LNS_advance_line (n, l) -> sprintf "DW_LNS_advance_line by %Ld to %d\n" n l
   | DW_LNS_set_file n -> sprintf "DW_LNS_set_file %Lu \n" n
   | DW_LNS_set_column n -> sprintf "DW_LNS_set_column %Lu \n" n
   | DW_LNS_negate_stmt -> sprintf "DW_LNS_negate_stmt \n"
   | DW_LNS_set_basic_block -> sprintf "DW_LNS_set_basic_block \n"
-  | DW_LNS_const_add_pc n -> sprintf "DW_LNS_const_add_pc %d \n" n
+  | DW_LNS_const_add_pc (n, a) -> sprintf "DW_LNS_const_add_pc by %d to 0x%x \n" n a
   | DW_LNS_fixed_advance_pc n -> sprintf "DW_LNS_fixed_advance_pc %Lu \n" n
   | DW_LNS_set_prologue_end -> sprintf "DW_LNS_set_prologue_end \n"
   | DW_LNS_set_epilogue_begin -> sprintf "DW_LNS_set_epilogue_begin \n"
   | DW_LNS_set_isa n -> sprintf "DW_LNS_set_isa %Lu \n" n
   | DW_LNE_end_sequence -> sprintf "DW_LNE_end_sequence \n"
-  | DW_LNE_set_address n -> sprintf "DW_LNE_set_address 0x%Lx \n" n
+  | DW_LNE_set_address n -> sprintf "DW_LNE_set_address to 0x%Lx \n" n
   | DW_LNE_define_file (s, a, b, c) -> sprintf "DW_LNE_define_file %s %Lu %Lu %Lu \n" s a b c
   | DW_LNE_set_discriminator n -> sprintf "DW_LNE_set_discriminator %Lu \n" n
   | DW_LNE_user n -> sprintf "DW_LNE_user %Lu \n" n
-  | DW_LN_spe_op -> sprintf "DW_LN_spe_op \n"
+  | DW_LN_spe_op (opc, aa, adr, la, li) -> sprintf "DW_LN_spe_op %d advance address by %d to 0x%x and line by %d to %d\n" opc aa adr la li
 
 let string_of_lineprg l =
     print_endline "Line Number Statements:";

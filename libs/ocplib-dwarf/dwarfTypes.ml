@@ -49,13 +49,13 @@ type dwarf_format =
 (* Section 7.21 - Line Number Information *)
 type dwarf_LN_OPS =
     DW_LNS_copy
-  | DW_LNS_advance_pc of Word64.t
-  | DW_LNS_advance_line of Int64.t
+  | DW_LNS_advance_pc of int * int
+  | DW_LNS_advance_line of Word64.t * int
   | DW_LNS_set_file of Word64.t
   | DW_LNS_set_column of Word64.t
   | DW_LNS_negate_stmt
   | DW_LNS_set_basic_block
-  | DW_LNS_const_add_pc of int
+  | DW_LNS_const_add_pc of int * int
   | DW_LNS_fixed_advance_pc of Word64.t
   | DW_LNS_set_prologue_end
   | DW_LNS_set_epilogue_begin
@@ -65,7 +65,7 @@ type dwarf_LN_OPS =
   | DW_LNE_define_file of string * Word64.t * Word64.t * Word64.t
   | DW_LNE_set_discriminator of Word64.t
   | DW_LNE_user of Word64.t
-  | DW_LN_spe_op
+  | DW_LN_spe_op of int * int * int * int * int
 
 type dwarf_TAG =
     DW_TAG_array_type
@@ -288,9 +288,9 @@ type dwarf_DIE =
 type dwarf_CU_LN_header =
   {
     header_offset : int;
-    unit_length : int64;
+    unit_length : Word64.t;
     version : int;
-    header_len : int64;
+    header_len : Word64.t;
     min_inst_len : int;
     max_ops_per_inst : int;
     default_is_stmt : int;

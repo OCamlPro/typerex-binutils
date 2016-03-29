@@ -197,7 +197,7 @@ let read_line_prog_header s =
     min_inst_len = min_inst_len;
     max_ops_per_inst = 1;
     default_is_stmt = default_is_stmt;
-    line_base = line_base;
+    line_base = DwarfUtils.uint8_to_int8 line_base;
     line_range = line_range;
     opcode_base = opcode_base;
     standard_opcode_lengths = standard_opcode_lengths;
@@ -246,15 +246,31 @@ let read_line_prog_stmts s h =
 
     let curr_state = ref blank_state in
 
+    let add_entry_new_state state opc args =
+        state.basic_block <- false;
+        state.prologue_end <- false;
+        state.epilogue_begin <- false;
+        state.discriminator <- 0 in
+
     let read_extended_opcode op s ofs_end =
         let dw_lne_lo_user = 0x80 in
         let dw_lne_hi_user = 0xff in
         let end_ins = !(s.offset) + ofs_end in
         match op with
-          | 0x01 -> DW_LNE_end_sequence
-          | 0x02 -> DW_LNE_set_address (if !(Flags.address_size_on_target) == 4 then read_int32 s else read_int64 s)
+          | 0x01 ->
+                  (* VM state is reset upon leaving the read_line_prog_stmts by setting the exit flag *)
+                  !(curr_state).end_sequence <- true;
+                  add_entry_new_state !curr_state op [];
+                  DW_LNE_end_sequence
+          | 0x02 ->
+                  let operand = if !(Flags.address_size_on_target) == 4 then read_int32 s else read_int64 s in
+                  !(curr_state).address <- Int64.to_int operand;
+                  DW_LNE_set_address operand
           | 0x03 -> DW_LNE_define_file ("", read_uleb128 s, read_uleb128 s, read_uleb128 s)
-          | 0x04 -> DW_LNE_set_discriminator (read_uleb128 s)
+          | 0x04 ->
+                 let operand = read_uleb128 s in
+                 !(curr_state).discriminator <- Int64.to_int operand;
+                 DW_LNE_set_discriminator operand
           | n -> if (n >= dw_lne_lo_user) && (n <= dw_lne_hi_user)
                  then DW_LNE_user (Int64.of_int n)
                  else Printf.kprintf failwith "unknown DW_LNE opcode %x" n in
@@ -262,42 +278,58 @@ let read_line_prog_stmts s h =
     let read_standard_opcode opc s =
         match opc with
           | 0x01 -> DW_LNS_copy
-          | 0x02 -> DW_LNS_advance_pc (read_uleb128 s)
-          | 0x03 -> DW_LNS_advance_line (read_sleb128 s)
+          | 0x02 ->
+                  let operand = read_uleb128 s in
+                  let address_addend = (Int64.to_int operand) * h.min_inst_len in
+                  !curr_state.address <- !curr_state.address + address_addend;
+                  DW_LNS_advance_pc (address_addend, !curr_state.address)
+          | 0x03 ->
+                  let operand = read_sleb128 s in
+                  !curr_state.line <- !curr_state.line + (Int64.to_int operand);
+                  DW_LNS_advance_line (operand, !curr_state.line)
           | 0x04 -> DW_LNS_set_file (read_uleb128 s)
-          | 0x05 -> DW_LNS_set_column (read_uleb128 s)
-          | 0x06 -> DW_LNS_negate_stmt
-          | 0x07 -> DW_LNS_set_basic_block
+          | 0x05 ->
+                  let operand = read_uleb128 s in
+                  !curr_state.column <- Int64.to_int operand;
+                  DW_LNS_set_column (operand)
+          | 0x06 ->
+                  !curr_state.is_stmt = if !curr_state.is_stmt == 0 then 1 else 0;
+                  DW_LNS_negate_stmt
+          | 0x07 ->
+                  !curr_state.basic_block <- true;
+                  DW_LNS_set_basic_block
           | 0x08 ->
                   let adjusted_opcode = 255 - h.opcode_base in
                   let address_addend = ((adjusted_opcode / h.line_range) * h.min_inst_len) in
-                  DW_LNS_const_add_pc address_addend
-          | 0x09 -> DW_LNS_fixed_advance_pc (read_int16 s)
-          | 0x0a -> DW_LNS_set_prologue_end
-          | 0x0b -> DW_LNS_set_epilogue_begin
-          | 0x0c -> DW_LNS_set_isa (read_uleb128 s)
+                  !curr_state.address <- !curr_state.address + address_addend;
+                  DW_LNS_const_add_pc (address_addend, !curr_state.address)
+          | 0x09 ->
+                  let operand = read_int16 s in
+                  !curr_state.address <- !curr_state.address + Int64.to_int operand;
+                  DW_LNS_fixed_advance_pc (operand)
+          | 0x0a ->
+                  !curr_state.prologue_end <- true;
+                  DW_LNS_set_prologue_end
+          | 0x0b ->
+                  !curr_state.epilogue_begin <- true;
+                  DW_LNS_set_epilogue_begin
+          | 0x0c ->
+                  let operand = read_uleb128 s in
+                  !curr_state.isa <- Int64.to_int operand;
+                  DW_LNS_set_isa (operand)
           | n -> Printf.kprintf failwith "unknown DW_LNS opcode %x" n in
 
-    let add_entry_new_state state opc args =
-        state.basic_block <- false;
-        state.prologue_end <- false;
-        state.epilogue_begin <- false;
-        state.discriminator <- 0 in
-
     let read_special_opcode state opcode =
-        let maximum_operations_per_instruction = h.max_ops_per_inst in
+        let max_ops_per_inst = h.max_ops_per_inst in
         let adjusted_opcode = opcode - h.opcode_base in
         let operation_advance = adjusted_opcode / h.line_range in
-        let address_addend = (
-            h.min_inst_len *
-                        ((state.op_index + operation_advance) /
-                          maximum_operations_per_instruction)) in
+        let address_addend = (h.min_inst_len * ((state.op_index + operation_advance) / max_ops_per_inst)) in
         state.address <- state.address + address_addend;
-        state.op_index <- (state.op_index + operation_advance) mod maximum_operations_per_instruction;
+        state.op_index <- (state.op_index + operation_advance) mod max_ops_per_inst;
         let line_addend = h.line_base + (adjusted_opcode mod h.line_range) in
         state.line <- state.line + line_addend;
         add_entry_new_state !curr_state opcode [line_addend; address_addend; state.op_index];
-        DW_LN_spe_op in
+        DW_LN_spe_op (adjusted_opcode, address_addend, state.address, line_addend, state.line) in
 
     let exit = ref true in
     let res = ref [] in
