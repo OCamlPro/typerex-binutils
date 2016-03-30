@@ -70,13 +70,16 @@ let read_abbrev_declaration s decl_code =
 let read_abbrev_section s t =
   let offset_tbl : abbrev_decl_table ref = ref (Hashtbl.create 10) in
   let exit = ref true in
+  let curr_offset = ref 0 in
   while !exit do
     let decl_code = read_uleb128 s in
 
     begin
     match decl_code with
-    | Some(0) -> Hashtbl.add t !(s.offset) !offset_tbl;
-                 offset_tbl := Hashtbl.create 10
+    | Some(0) ->
+             Hashtbl.add t !curr_offset !offset_tbl;
+             curr_offset := !(s.offset);
+             offset_tbl := Hashtbl.create 10
     | Some(c) -> begin
              let abbrev_declaration = read_abbrev_declaration s (Int64.of_int c) in
              Hashtbl.add !offset_tbl c abbrev_declaration;
