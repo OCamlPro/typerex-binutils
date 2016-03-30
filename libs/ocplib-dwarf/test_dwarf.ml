@@ -1,7 +1,5 @@
 open ElfTypes.RAW
 
-type t = (string, string) Hashtbl.t;;
-
 let hex_flag = ref false
 let single_section = ref ""
 
@@ -18,6 +16,11 @@ let dump_hex s =
 
 let is_string_empty s = (s = "")
 
+let get_section t s =
+    try
+        Hashtbl.find t s
+    with Not_found -> Printf.printf "error : section %s not found\n" s; exit 1
+
 let _ =
   Arg.parse arg_list (fun file ->
 
@@ -26,8 +29,7 @@ let _ =
     let regex = (Str.regexp "debug") in
     let filter_debug_sections s_name = Str.string_match regex s_name 1 in
 
-    let t_original : t = Hashtbl.create 10 in
-    let abbrev_table_by_offset = ref (Hashtbl.create 20) in
+    let t_original = Hashtbl.create 10 in
 
     Array.iteri (fun i s ->
         if String.length s.section_name > 0 then begin
@@ -38,15 +40,14 @@ let _ =
         end;
     ) raw.elf_sections;
 
-    if is_string_empty !single_section then begin
-        Printf.printf "available sections : \n";
+    if is_string_empty !single_section then
+        begin
+        print_endline "available sections : ";
         Hashtbl.iter (fun k v -> Printf.printf "%s\n" k) t_original
-    end
-    else begin
-        let target_section =
-            try
-                Hashtbl.find t_original !single_section
-            with Not_found -> Printf.printf "error : section %s not found\n" !single_section; exit 1 in
+        end
+    else
+        begin
+        let target_section = get_section t_original !single_section in
         let section_stream = Stream_in.of_string target_section in
 
         if !hex_flag then begin
@@ -54,17 +55,22 @@ let _ =
             exit 1
         end;
 
-        if String.compare !single_section ".debug_info" == 0 then
-            DwarfReader.read_CUs section_stream;
-
-        if String.compare !single_section ".debug_line" == 0 then
-            DwarfReader.read_lineprog_section section_stream;
-
-        if String.compare !single_section ".debug_abbrev" == 0 then
-            abbrev_table_by_offset := DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10);
-            Hashtbl.iter (fun k v -> Printf.printf "abbrevs for offset %d\n" k;
-                                     DwarfPrinter.string_of_abbrev_section v;
-                                     Printf.printf "----------------------\n") !abbrev_table_by_offset
+        match !single_section with
+        | ".debug_info" ->
+                begin
+                    let abbrev_section_stream = Stream_in.of_string @@ get_section t_original ".debug_abbrev" in
+                    let abbrev_table = DwarfReader.read_abbrev_section abbrev_section_stream (Hashtbl.create 10) in
+                    DwarfReader.read_CUs abbrev_table section_stream;
+                end
+        | ".debug_line" -> DwarfReader.read_lineprog_section section_stream;
+        | ".debug_abbrev" ->
+                begin
+                    let abbrev_table_by_offset = DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10) in
+                    Hashtbl.iter (fun k v -> Printf.printf "abbrevs for offset %d\n" k;
+                                             DwarfPrinter.string_of_abbrev_section v;
+                                             Printf.printf "----------------------\n") abbrev_table_by_offset
+                end
+        | _ -> print_endline "other sections not supported yet"
 
     end;
 

@@ -31,8 +31,7 @@ type ('dwarf_classes, 'form) t =
   | DWF_Flag_present : form_class * form_data -> (form_class, form_data) t
   | DWF_None
 
-let get_form =
-    (fun s f ->
+let get_form s f =
     let read_flag s = match read_int8 s with 0x00 -> false | _ -> true in
     let read_block l s =
         let length = ref l in
@@ -55,9 +54,9 @@ let get_form =
       | DW_FORM_block2 -> let length = read_int16 s in
                           DWF_Block2 (`block, Block2 (length, read_block length s))
       (*4 - 4B*)
-      (*| DW_FORM_block4 -> let open Int32 in*)
+      (*| DW_FORM_block4 ->*)
                           (*let length = read_int32 s in*)
-                          (*DWF_Block4 (`block, Block4 (length, read_block (to_int length) s))*)
+                          (*DWF_Block4 (`block, Block4 (length, read_block (Int32.to_int length) s))*)
       (*a uleb128 length - number of bytes specified*)
       | DW_FORM_block -> let length = read_uleb128 s in
                             DWF_Block (`block, Block (length, read_block (Int64.to_int length) s))
@@ -106,5 +105,5 @@ let get_form =
     | DW_FORM_exprloc ->
                         let length = read_uleb128 s in
                         DWF_Exprloc (`exprloc, Exprloc (length, read_block (Int64.to_int length) s))
-    | _ -> DWF_None)
+    | _ -> DWF_None
 

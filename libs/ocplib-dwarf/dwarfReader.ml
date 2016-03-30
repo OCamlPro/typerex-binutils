@@ -18,7 +18,8 @@ open Leb128
 open DwarfTypes
 open DwarfPrinter
 
-type at = (int, dwarf_abbreviation) Hashtbl.t
+type abbrev_decl_table = (int, dwarf_abbreviation) Hashtbl.t
+type abbrev_offset_table = (int, abbrev_decl_table) Hashtbl.t
 
 let get_initial_length stream =
   let sixty_four_bit_indicator = 0xffffffffl in
@@ -67,7 +68,7 @@ let read_abbrev_declaration s decl_code =
       abbrev_attributes = attr_helper s; }
 
 let read_abbrev_section s t =
-  let offset_tbl : at ref = ref (Hashtbl.create 10) in
+  let offset_tbl : abbrev_decl_table ref = ref (Hashtbl.create 10) in
   let exit = ref true in
   while !exit do
     let decl_code = read_uleb128 s in
@@ -87,8 +88,12 @@ let read_abbrev_section s t =
   done;
   t
 
-let read_CUs s =
+let read_CUs abbrev_tbl s =
   let offset = ref 0 in
+  let get_abbrev_tbl ofs =
+    try
+        Some(Hashtbl.find abbrev_tbl ofs)
+    with Not_found -> None in
   while Stream_in.peek s != None do
       get_initial_length s
       >>= fun (dwarf_format, initial_length) ->
@@ -110,12 +115,16 @@ let read_CUs s =
       in
       let to_skip = Int64.to_int (Int64.sub initial_length (Int64.of_int (2 + 1 + abbrev_offset_size))) in
       offset := !offset + initial_length_size + abbrev_offset_size + 2 + 1;
-      (*Printf.printf "now at offset %d\n" !offset;*)
+      Printf.printf "now at offset %d\n" !offset;
       Printf.printf "initial length : %Lu\n" initial_length;
-      (*Printf.printf "dwarf version : %d\n" version;*)
+      Printf.printf "dwarf version : %d\n" version;
       Printf.printf "debug_abbrev_offset : %Lu\n" abbrev_offset;
-      (*Printf.printf "address width on target arch: %d bytes\n" address_size;*)
-      (*Printf.printf "bytes to skip: %d\n" to_skip;*)
+      if get_abbrev_tbl (Int64.to_int abbrev_offset) == None then
+          Printf.printf "abbrev for offset %Lu not found\n" abbrev_offset
+      else
+          Printf.printf "abbrev for offset %Lu found\n" abbrev_offset;
+      Printf.printf "address width on target arch: %d bytes\n" address_size;
+      Printf.printf "bytes to skip: %d\n" to_skip;
       for i = 1 to to_skip do Stream_in.junk s; offset := !offset + 1 done;
       Printf.printf "now at offset %d\n" !offset;
       None
@@ -255,7 +264,6 @@ let read_line_prog_stmts s h =
     let read_extended_opcode op s ofs_end =
         let dw_lne_lo_user = 0x80 in
         let dw_lne_hi_user = 0xff in
-        let end_ins = !(s.offset) + ofs_end in
         match op with
           | 0x01 ->
                   (* VM state is reset upon leaving the read_line_prog_stmts by setting the exit flag *)
@@ -293,7 +301,7 @@ let read_line_prog_stmts s h =
                   !curr_state.column <- Int64.to_int operand;
                   DW_LNS_set_column (operand)
           | 0x06 ->
-                  !curr_state.is_stmt = if !curr_state.is_stmt == 0 then 1 else 0;
+                  let _ = !curr_state.is_stmt = if !curr_state.is_stmt == 0 then 1 else 0 in
                   DW_LNS_negate_stmt
           | 0x07 ->
                   !curr_state.basic_block <- true;
