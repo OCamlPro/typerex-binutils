@@ -1,3 +1,4 @@
+open DwarfUtils
 open DwarfTypes
 open DwarfFormat
 
@@ -10,7 +11,6 @@ let get_initial_length stream =
       else
           let initial_length = DwarfUtils.read_int64 stream in
                 (DWF_64BITS, initial_length)
-
 
 let get_version s = DwarfUtils.read_int16 s
 
@@ -36,10 +36,13 @@ type dwarf_DIE =
       (* Type tag. *)
       die_tag          : dwarf_TAG;
       (* Attribute tag and value pairs. *)
-      die_attributes   : (dwarf_AT * dwarf_ATVAL) list;
-
-      die_attribute_vals : (Class.form_class, Form_data.form_data) Form.t list;
+      die_attributes   : (dwarf_AT * Form.dwarf_FORM) list;
+      die_attribute_vals : (Class.form_class * Form_data.form_data) list;
     }
+
+let (=*=) a b = match Int64.compare a b with
+                    | 1 | -1 -> false
+                    | _ -> true
 
 let readAllDIE abbrev_tbl s =
 
@@ -61,9 +64,18 @@ let readAllDIE abbrev_tbl s =
             Some(Hashtbl.find abbrev_tbl ofs)
         with Not_found -> None in
 
-    let read_CU abbrev_ofs s = () in
+    let get_abbrev_decl tbl code =
+        try
+            Some(Hashtbl.find tbl code)
+        with Not_found -> None in
 
-  (*= List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes in ()*)
+    let read_CU d s =
+        let vals = List.map (fun (n,f) -> Form.get_form s f) d.abbrev_attributes in
+        {empty_DIE with die_attribute_vals = vals; die_tag = d.abbrev_tag; die_id = d.abbrev_num; die_attributes = d.abbrev_attributes} in
+
+    let rec read_CU_with_childs d s lvl =
+        let vals = List.map (fun (n,f) -> Form.get_form s f) d.abbrev_attributes in
+        empty_DIE in
 
     let res = ref [] in
 
@@ -86,22 +98,39 @@ let readAllDIE abbrev_tbl s =
       let to_skip = Int64.to_int (Int64.sub initial_length (Int64.of_int (2 + 1 + abbrev_offset_size))) in
       offset := !offset + initial_length_size + abbrev_offset_size + 2 + 1;
       Printf.printf "now at offset %d\n" !offset;
+      Printf.printf "bytes to skip: %d\n" to_skip;
+      Printf.printf "next offset should be at: %d\n" (!offset + to_skip);
+
+      print_endline "";
+
       Printf.printf "initial length : %Lu\n" initial_length;
       Printf.printf "dwarf version : %d\n" version;
       Printf.printf "debug_abbrev_offset : %Lu\n" abbrev_offset;
-      let curr_offset_tbl = get_abbrev_tbl (Int64.to_int abbrev_offset) in
-      if curr_offset_tbl == None then
-          Printf.printf "abbrev for offset %Lu not found\n" abbrev_offset
-      else
-          begin
-              Printf.printf "abbrev for offset %Lu found\n" abbrev_offset;
-              read_CU curr_offset_tbl s ;
-              ()
-          end;
       Printf.printf "address width on target arch: %d bytes\n" address_size;
-      Printf.printf "bytes to skip: %d\n" to_skip;
-      for i = 1 to to_skip do DwarfUtils.junk s; offset := !offset + 1 done;
-      Printf.printf "now at offset %d\n" !offset;
-      end
 
+      print_endline "";
+
+      match get_abbrev_tbl (Int64.to_int abbrev_offset) with
+        | Some(curr_offset_tbl) ->
+                          begin
+                              Printf.printf "abbrev for offset %Lu found\n" abbrev_offset;
+                              let die_abbrev_code = read_uleb128 s in
+                              match get_abbrev_decl curr_offset_tbl (Int64.to_int die_abbrev_code) with
+                                | Some(d) -> Printf.printf "abbrev decl for code %Lu found\n" die_abbrev_code;
+                                            if die_abbrev_code =*= d.abbrev_num
+                                            then begin
+                                                Printf.printf "ok for %Lu\n" die_abbrev_code;
+                                                if d.abbrev_has_children
+                                                then res := [read_CU_with_childs d s 0] @ !res
+                                                else res := [read_CU d s] @ !res
+                                            end
+                                            else Printf.printf "err for %Lu\n" die_abbrev_code;
+                                | None -> Printf.printf "abbrev decl for code %Lu not found\n" die_abbrev_code
+                          end
+        | None -> Printf.printf "abbrev for offset %Lu not found\n" abbrev_offset;
+
+      (*for i = 1 to to_skip do DwarfUtils.junk s; offset := !offset + 1 done;*)
+      (*Printf.printf "now at offset %d\n" !offset;*)
+      end;
+    Printf.printf "list length : %d\n" (List.length !res)
     done

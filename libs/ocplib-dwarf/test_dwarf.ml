@@ -67,7 +67,7 @@ let _ =
         | ".debug_abbrev" ->
                 begin
                     let abbrev_table_by_offset = DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10) in
-                    Hashtbl.iter (fun k v -> Printf.printf "abbrevs for offset %d\n" k;
+                    Hashtbl.iter (fun k v -> Printf.printf "abbrevs for offset 0x%x\n" k;
                                              DwarfPrinter.string_of_abbrev_section v;
                                              Printf.printf "----------------------\n") abbrev_table_by_offset
                 end

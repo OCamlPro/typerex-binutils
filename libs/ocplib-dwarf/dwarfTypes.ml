@@ -223,13 +223,6 @@ type dwarf_AT  =
   | DW_AT_user of Word64.t          (*   user extension *)
   | DW_AT_unk of Word64.t
 
-type dwarf_ATVAL =
-    DW_ATVAL_INT of Int64.t
-      | DW_ATVAL_UINT of Word64.t
-      | DW_ATVAL_STRING of string
-      | DW_ATVAL_BLOB of string
-      | DW_ATVAL_BOOL  of bool
-
 type dwarf_abbreviation =
     { abbrev_num : Word64.t;
       abbrev_tag : dwarf_TAG;
@@ -322,8 +315,6 @@ type dwarf_FDE =
 type dwarf_CIEFDE =
     DW_CIE of dwarf_CIE
   | DW_FDE of dwarf_FDE
-
-
 
 type dwarf_OP =
     DW_OP_addr of Word64.t
@@ -586,7 +577,6 @@ let dw_ate = function
   | 0x0e -> DW_ATE_unsigned_fixed
   | 0x0f -> DW_ATE_decimal_float
   | n -> Printf.kprintf failwith "unknown DW_ATE %x" n
-
 
 let dw_ds = function
   | 0x01 -> DW_DS_unsigned

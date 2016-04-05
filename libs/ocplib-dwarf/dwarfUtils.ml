@@ -23,7 +23,9 @@ let wrap lf bf c =
         let res = match Arch.endianness with
         | LittleEndian -> lf s.str !(s.offset)
         | BigEndian -> bf s.str !(s.offset) in
-        s.offset := !(s.offset) + c; res
+        s.offset := !(s.offset) + c;
+        (*Printf.printf "offset str at %d\n" !(s.offset); *)
+        res
         with _ -> Printf.kprintf failwith "end of string reached\n"
 
 let read_char = wrap LE.get_char BE.get_char 1
