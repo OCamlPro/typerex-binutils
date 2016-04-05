@@ -17,6 +17,6 @@ open DwarfTypes
 type abbrev_decl_table = (int, dwarf_abbreviation) Hashtbl.t
 type abbrev_offset_table = (int, abbrev_decl_table) Hashtbl.t
 
-val read_CUs : abbrev_offset_table -> Stream_in.s -> unit
+val read_CUs : abbrev_offset_table -> DwarfUtils.s -> unit
 val read_lineprog_section : Stream_in.s -> unit
 val read_abbrev_section : Stream_in.s -> abbrev_offset_table -> abbrev_offset_table

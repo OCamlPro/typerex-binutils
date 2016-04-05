@@ -17,6 +17,7 @@ open OptionMonad
 open Leb128
 open DwarfTypes
 open DwarfPrinter
+open DwarfFormat
 
 type abbrev_decl_table = (int, dwarf_abbreviation) Hashtbl.t
 type abbrev_offset_table = (int, abbrev_decl_table) Hashtbl.t
@@ -59,7 +60,7 @@ let read_abbrev_declaration s decl_code =
     let rec attr_helper s =
         match (read_uleb128 s, read_uleb128 s) with
           | Some(0), Some(0) -> []
-          | Some(attr_name), Some(attr_form) -> (dw_at attr_name, dw_form attr_form) :: attr_helper s
+          | Some(attr_name), Some(attr_form) -> (dw_at attr_name, Form.dw_form attr_form) :: attr_helper s
           | _, _ -> [] in
 
     { abbrev_num = decl_code;
@@ -92,52 +93,11 @@ let read_abbrev_section s t =
   t
 
 let read_CUs abbrev_tbl s =
-  let offset = ref 0 in
-  let get_abbrev_tbl ofs =
-    try
-        Some(Hashtbl.find abbrev_tbl ofs)
-    with Not_found -> None in
-  while Stream_in.peek s != None do
-      get_initial_length s
-      >>= fun (dwarf_format, initial_length) ->
-      get_version s
-      >>= fun version ->
-      get_abbrev_offset s dwarf_format
-      >>= fun abbrev_offset ->
-      get_address_size s
-      >>= fun address_size ->
-
-      begin
-      let initial_length_size = match dwarf_format with
-        DWF_32BITS -> 4
-        | DWF_64BITS -> 12
-      in
-      let abbrev_offset_size = match dwarf_format with
-        DWF_32BITS ->Printf.printf "dwarf format 32 bits\n"; 4
-        | DWF_64BITS -> Printf.printf "dwarf format 64 bits\n";8
-      in
-      let to_skip = Int64.to_int (Int64.sub initial_length (Int64.of_int (2 + 1 + abbrev_offset_size))) in
-      offset := !offset + initial_length_size + abbrev_offset_size + 2 + 1;
-      Printf.printf "now at offset %d\n" !offset;
-      Printf.printf "initial length : %Lu\n" initial_length;
-      Printf.printf "dwarf version : %d\n" version;
-      Printf.printf "debug_abbrev_offset : %Lu\n" abbrev_offset;
-      if get_abbrev_tbl (Int64.to_int abbrev_offset) == None then
-          Printf.printf "abbrev for offset %Lu not found\n" abbrev_offset
-      else
-          Printf.printf "abbrev for offset %Lu found\n" abbrev_offset;
-      Printf.printf "address width on target arch: %d bytes\n" address_size;
-      Printf.printf "bytes to skip: %d\n" to_skip;
-      for i = 1 to to_skip do Stream_in.junk s; offset := !offset + 1 done;
-      Printf.printf "now at offset %d\n" !offset;
-      None
-      end
-  done
-
+  DwarfDIE.readAllDIE abbrev_tbl s
 
 let read_line_prog_header s =
   let header_offset = !(s.offset) in
-  let get_header_length s = match !(Flags.format) with
+  let get_header_length s = match !(DwarfFormat.format) with
     | DWF_32BITS -> Stream_in.read_int32 s >>= (fun i32 -> Some (Int64.of_int32 i32))
     | DWF_64BITS -> Stream_in.read_int64 s in
 

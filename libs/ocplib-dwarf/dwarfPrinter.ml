@@ -112,34 +112,6 @@ let string_of_AT =
   | DW_AT_user w ->"DW_AT_user"
   | DW_AT_unk w -> Printf.sprintf "unknown DW_AT %Lu" w
 
-let string_of_FORM =
-  function
-    DW_FORM_addr ->"DW_FORM_addr"
-  | DW_FORM_block2 ->"DW_FORM_block2"
-  | DW_FORM_block4 ->"DW_FORM_block4"
-  | DW_FORM_data2 ->"DW_FORM_data2"
-  | DW_FORM_data4 ->"DW_FORM_data4"
-  | DW_FORM_data8 ->"DW_FORM_data8"
-  | DW_FORM_string ->"DW_FORM_string"
-  | DW_FORM_block ->"DW_FORM_block"
-  | DW_FORM_block1 ->"DW_FORM_block1"
-  | DW_FORM_data1 ->"DW_FORM_data1"
-  | DW_FORM_flag ->"DW_FORM_flag"
-  | DW_FORM_sdata ->"DW_FORM_sdata"
-  | DW_FORM_strp ->"DW_FORM_strp"
-  | DW_FORM_udata ->"DW_FORM_udata"
-  | DW_FORM_ref_addr ->"DW_FORM_ref_addr"
-  | DW_FORM_ref1 ->"DW_FORM_ref1"
-  | DW_FORM_ref2 ->"DW_FORM_ref2"
-  | DW_FORM_ref4 ->"DW_FORM_ref4"
-  | DW_FORM_ref8 ->"DW_FORM_ref8"
-  | DW_FORM_ref_udata ->"DW_FORM_ref_udata"
-  | DW_FORM_indirect ->"DW_FORM_indirect"
-  | DW_FORM_sec_offset -> "DW_FORM_sec_offset"
-  | DW_FORM_exprloc -> "DW_FORM_exprloc"
-  | DW_FORM_flag_present -> "DW_FORM_flag_present"
-  | DW_FORM_ref_sig8 -> "DW_FORM_ref_sig8"
-
 let string_of_TAG =
   function
     DW_TAG_array_type ->"DW_TAG_array_type"
@@ -205,7 +177,7 @@ let string_of_abbrev_decl d =
   printf "Number TAG\n";
   printf "%Ld %s\n" d.abbrev_num (string_of_TAG d.abbrev_tag);
   if d.abbrev_has_children then printf "[has children]\n" else printf "[no children]\n";
-  let _ = List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (string_of_FORM f)) d.abbrev_attributes in ()
+  let _ = List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (Form.string_of_FORM f)) d.abbrev_attributes in ()
 
 let string_of_abbrev_section tbl =
   Hashtbl.iter (fun k v -> string_of_abbrev_decl v; printf "\n") tbl

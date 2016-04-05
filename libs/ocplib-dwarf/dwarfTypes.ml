@@ -42,9 +42,6 @@ end
 
 module Int64 = Int64
 
-type dwarf_format =
-  DWF_32BITS
-  | DWF_64BITS
 
 (* Section 7.21 - Line Number Information *)
 type dwarf_LN_OPS =
@@ -226,33 +223,6 @@ type dwarf_AT  =
   | DW_AT_user of Word64.t          (*   user extension *)
   | DW_AT_unk of Word64.t
 
-type dwarf_FORM =
-    DW_FORM_addr              (*   address *)
-  | DW_FORM_block2 (*   block *)
-  | DW_FORM_block4 (*   block *)
-  | DW_FORM_data2 (*   constant *)
-  | DW_FORM_data4 (*   constant, lineptr, loclistptr, macptr, rangelistptr *)
-  | DW_FORM_data8 (*   constant, lineptr, loclistptr, macptr, rangelistptr *)
-  | DW_FORM_string (*   string *)
-  | DW_FORM_block (*   block *)
-  | DW_FORM_block1 (*   block *)
-  | DW_FORM_data1 (*   constant *)
-  | DW_FORM_flag (*   flag *)
-  | DW_FORM_sdata (*   constant *)
-  | DW_FORM_strp (*   string *)
-  | DW_FORM_udata (*   constant *)
-  | DW_FORM_ref_addr            (*   reference *)
-  | DW_FORM_ref1                (*   reference *)
-  | DW_FORM_ref2                (*   reference *)
-  | DW_FORM_ref4                (*   reference *)
-  | DW_FORM_ref8                (*   reference *)
-  | DW_FORM_ref_udata           (*   reference *)
-  | DW_FORM_indirect            (*   (see Section 7.5.3 of DWARF3 specification) *)
-  | DW_FORM_sec_offset      (* lineptr, loclistptr, macptr, rangelistptr *)
-  | DW_FORM_exprloc         (* exprloc *)
-  | DW_FORM_flag_present    (* flag *)
-  | DW_FORM_ref_sig8        (* reference *)
-
 type dwarf_ATVAL =
     DW_ATVAL_INT of Int64.t
       | DW_ATVAL_UINT of Word64.t
@@ -264,25 +234,7 @@ type dwarf_abbreviation =
     { abbrev_num : Word64.t;
       abbrev_tag : dwarf_TAG;
       abbrev_has_children : bool;
-      abbrev_attributes : (dwarf_AT * dwarf_FORM) list;
-    }
-
-type dwarf_DIE =
-    { die_id : Word64.t; (* Unique identifier for this entry. *)
-      (* Unique identifier of this entry's parent. *)
-      die_parent : Word64.t option;
-      (* Unique identifiers of this entry's children. *)
-      die_children : Word64.t list;
-      (* Unique identifier of the left sibling in the DIE tree,
-         if one exists. *)
-      die_sibling_left  : Word64.t option;
-      (* Unique identifier of the right sibling in the DIE tree,
-         if one exists. *)
-      die_sibling_right : Word64.t option;
-      (* Type tag. *)
-      die_tag          : dwarf_TAG;
-      (* Attribute tag and value pairs. *)
-      die_attributes   : (dwarf_AT * dwarf_ATVAL) list;
+      abbrev_attributes : (dwarf_AT * Form.dwarf_FORM) list;
     }
 
 type dwarf_CU_LN_header =
@@ -892,32 +844,4 @@ let dw_at =
       else
         DW_AT_unk (Int64.of_int n)
 
-let dw_form =
-  function
-    0x01 -> DW_FORM_addr
-  | 0x03 -> DW_FORM_block2
-  | 0x04 -> DW_FORM_block4
-  | 0x05 -> DW_FORM_data2
-  | 0x06 -> DW_FORM_data4
-  | 0x07 -> DW_FORM_data8
-  | 0x08 -> DW_FORM_string
-  | 0x09 -> DW_FORM_block
-  | 0x0a -> DW_FORM_block1
-  | 0x0b -> DW_FORM_data1
-  | 0x0c -> DW_FORM_flag
-  | 0x0d -> DW_FORM_sdata
-  | 0x0e -> DW_FORM_strp
-  | 0x0f -> DW_FORM_udata
-  | 0x10 -> DW_FORM_ref_addr
-  | 0x11 -> DW_FORM_ref1
-  | 0x12 -> DW_FORM_ref2
-  | 0x13 -> DW_FORM_ref4
-  | 0x14 -> DW_FORM_ref8
-  | 0x15 -> DW_FORM_ref_udata
-  (*| 0x16 -> DW_FORM_indirect*)
-  | 0x17 -> DW_FORM_sec_offset
-  | 0x18 -> DW_FORM_exprloc
-  | 0x19 -> DW_FORM_flag_present
-  | 0x20 -> DW_FORM_ref_sig8
-  | n -> Printf.kprintf failwith "unknown DW_FORM %x" n
 
