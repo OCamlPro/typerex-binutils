@@ -19,8 +19,16 @@ open DwarfTypes
 open DwarfPrinter
 open DwarfFormat
 
-type abbrev_decl_table = (int, dwarf_abbreviation) Hashtbl.t
+type abbrev_decl_table = (int64, dwarf_abbreviation) Hashtbl.t
+(*type abbrev_decl_table = (int, dwarf_abbreviation) Hashtbl.t*)
 type abbrev_offset_table = (int, abbrev_decl_table) Hashtbl.t
+
+let (=*=) a b = match Int64.compare a b with
+                    | 1 | -1 -> false
+                    | _ -> true
+let z64 = Int64.zero
+
+let both_int64_are_zero a b = a =*= z64 && b =*= z64
 
 let get_initial_length stream =
   let sixty_four_bit_indicator = 0xffffffffl in
@@ -47,7 +55,7 @@ let read_abbrev_declaration s decl_code =
     let tag =
         begin
             match read_uleb128 s with
-                | Some(t) -> dw_tag t
+                | Some(t) -> dw_tag (Int64.to_int t)
                 | _ -> raise (Failure "cannot read tag")
         end in
     let has_children =
@@ -59,8 +67,12 @@ let read_abbrev_declaration s decl_code =
         end in
     let rec attr_helper s =
         match (read_uleb128 s, read_uleb128 s) with
-          | Some(0), Some(0) -> []
-          | Some(attr_name), Some(attr_form) -> (dw_at attr_name, Form.dw_form attr_form) :: attr_helper s
+          | Some(attr_name), Some(attr_form) ->
+                  begin
+                      if both_int64_are_zero attr_name attr_form
+                      then []
+                      else (dw_at (Int64.to_int attr_name), Form.dw_form (Int64.to_int attr_form)) :: attr_helper s
+                  end
           | _, _ -> [] in
 
     { abbrev_num = decl_code;
@@ -77,13 +89,17 @@ let read_abbrev_section s t =
 
     begin
     match decl_code with
-    | Some(0) ->
-             Hashtbl.add t !curr_offset !offset_tbl;
-             curr_offset := !(s.offset);
-             offset_tbl := Hashtbl.create 10
     | Some(c) -> begin
-             let abbrev_declaration = read_abbrev_declaration s (Int64.of_int c) in
-             Hashtbl.add !offset_tbl c abbrev_declaration;
+                if c =*= z64
+                then begin
+                 Hashtbl.add t !curr_offset !offset_tbl;
+                 curr_offset := !(s.offset);
+                 offset_tbl := Hashtbl.create 10
+                end
+                else begin
+                 let abbrev_declaration = read_abbrev_declaration s c in
+                 Hashtbl.add !offset_tbl c abbrev_declaration;
+                end
            end
     | None -> exit := false
     end;
@@ -178,7 +194,7 @@ let read_line_prog_header s =
 
 let read_line_prog_stmts s h =
     let read_uleb128 s = match Leb128.read_uleb128 s with
-       | Some(i) -> Int64.of_int i
+       | Some(i) -> i
        | None -> Printf.kprintf failwith "pblm" in
 
     let read_sleb128 s = match Leb128.read_sleb128 s with

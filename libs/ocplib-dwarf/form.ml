@@ -126,11 +126,21 @@ let get_form s f =
       | DW_FORM_sdata -> (`constant, Sdata (read_sleb128 s))
       | DW_FORM_udata -> (`constant, Udata (read_uleb128 s))
 
-      | DW_FORM_string -> Printf.printf "str what\n"; (`string, String (read_null_terminated_string s))
+      | DW_FORM_string -> let st = (`string, String (read_null_terminated_string s)) in
+                                begin
+                                    match (snd st) with
+                                    | String (ss) -> Printf.printf "read str %s\n" ss
+                                    | _ -> print_endline "nope"
+                                end;
+                                    st
 
-      | DW_FORM_strp -> if !DwarfFormat.format == DWF_32BITS
+      | DW_FORM_strp -> begin let res = if !DwarfFormat.format == DWF_32BITS
                         then (`string, OFS_I32 (read_int32 s))
-                        else (`string, OFS_I64 (read_int64 s))
+                        else (`string, OFS_I64 (read_int64 s)) in begin
+                    match snd res with
+                    OFS_I32 i -> Printf.printf "read debug_str ofs %lx\n" i
+                    | OFS_I64 i -> Printf.printf "read debug_str ofs %Lx\n" i
+                    | _ -> Printf.printf "nn\n" end; res end
 
       | DW_FORM_flag -> (`flag, Flag (read_flag s))
       | DW_FORM_flag_present -> (`flag, FlagPresent)
@@ -154,11 +164,15 @@ let get_form s f =
               (`reference, OFS_I64 (read_int64 s))
     | DW_FORM_indirect -> (`indirect, Udata (read_uleb128 s))
     | DW_FORM_sec_offset ->
-            if !DwarfFormat.format == DWF_32BITS
+            begin let res = if !DwarfFormat.format == DWF_32BITS
             then
               (`ptr, OFS_I32 (read_int32 s))
             else
-              (`ptr, OFS_I64 (read_int64 s))
+              (`ptr, OFS_I64 (read_int64 s)) in begin
+            match snd res with
+            OFS_I32 i -> Printf.printf "read sec_ofs %lx\n" i
+            | OFS_I64 i -> Printf.printf "read sec_ofs %Lx\n" i
+            | _ -> Printf.printf "nn\n" end; res end
 
     (*is a block*)
     | DW_FORM_exprloc ->

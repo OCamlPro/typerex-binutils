@@ -244,7 +244,7 @@ type dwarf_CU_LN_header =
     opcode_base : int;
     standard_opcode_lengths : int list;
     include_directories : string list;
-    file_names : (string * int * int * int) list; }
+    file_names : (string * int64 * int64 * int64) list; }
 
 type dwarf_line_number_state =
     { mutable address       : int;

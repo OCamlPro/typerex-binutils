@@ -14,7 +14,7 @@
 
 open DwarfTypes
 
-type abbrev_decl_table = (int, dwarf_abbreviation) Hashtbl.t
+type abbrev_decl_table = (int64, dwarf_abbreviation) Hashtbl.t
 type abbrev_offset_table = (int, abbrev_decl_table) Hashtbl.t
 
 val read_CUs : abbrev_offset_table -> DwarfUtils.s -> unit

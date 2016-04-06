@@ -214,7 +214,7 @@ let string_of_lineprog_header h =
   else begin
       print_endline " The File Name Table:";
       printf "  Entry\tDir\tTime\tSize\tName\n";
-      List.iteri (fun i (a,b,c,d) -> printf "  %d\t%d\t%d\t%d\t%s\n" (i+1) b c d a) h.file_names;
+      List.iteri (fun i (a,b,c,d) -> printf "  %d\t%Ld\t%Ld\t%Ld\t%s\n" (i+1) b c d a) h.file_names;
       print_endline "";
   end
 

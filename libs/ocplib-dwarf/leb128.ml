@@ -25,7 +25,7 @@ let read_uleb128 s =
     >>= fun i ->
     let lower_7_bits = Int64.of_int (i land 0x7f) in
     let result = Int64.logor result (Int64.shift_left lower_7_bits shift) in
-    if i < 128 then Some(Int64.to_int result)
+    if i < 128 then Some(result)
     else hparse ~result ~shift:(shift + 7)
   in
   hparse ~result:Int64.zero ~shift:0
