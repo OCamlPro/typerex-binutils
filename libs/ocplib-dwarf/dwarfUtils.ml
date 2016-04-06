@@ -20,7 +20,6 @@ let peek = wrap_peek LE.get_int8 BE.get_int8
 let wrap lf bf c =
     fun s ->
         try
-        Printf.printf "now reading at offset 0x%x %d bytes\n" !(s.offset) c;
         let res = match Arch.endianness with
         | LittleEndian -> lf s.str !(s.offset)
         | BigEndian -> bf s.str !(s.offset) in

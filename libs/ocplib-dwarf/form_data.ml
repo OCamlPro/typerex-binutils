@@ -21,4 +21,3 @@ type form_data =
     | Ref8 of int64
     | Ref_udata of int64
     | Indirect of int64
-    | None

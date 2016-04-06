@@ -1,5 +1,6 @@
 open Form_data
 open Class
+open DwarfFormat
 open DwarfUtils
 
 type dwarf_FORM =
@@ -96,16 +97,11 @@ let get_form s f =
             length := !length - 1
         done;
         !arr in
-    Printf.printf "now reading %s\n" (string_of_FORM f);
-    match f with
-        DW_FORM_addr -> begin let res = if !Flags.address_size_on_target == 4
-                        then (`address, OFS_I32 (read_int32 s))
-                        else (`address, OFS_I64 (read_int64 s)) in begin
-        match snd res with
-        OFS_I32 i -> Printf.printf "read adroffset %lx\n" i
-        | OFS_I64 i -> Printf.printf "read adroffset %Lx\n" i
-        | _ -> Printf.printf "nn\n" end; res end
 
+    match f with
+        DW_FORM_addr -> if !Flags.address_size_on_target == 4
+                        then (`address, OFS_I32 (read_int32 s))
+                        else (`address, OFS_I64 (read_int64 s))
       (*blocks are arrays*)
       (*1 byte length followed by up to 255 bytes*)
       | DW_FORM_block1 -> let length = read_int8 s in
@@ -121,26 +117,15 @@ let get_form s f =
                          (`block, Block (length, read_block (Int64.to_int length) s))
       | DW_FORM_data1 -> (`constant, Data1 (read_char s))
       | DW_FORM_data2 -> (`constant, Data2 (read_int16 s))
-      | DW_FORM_data4 -> let res = read_int32 s in Printf.printf "read data4 %ld\n" res; (`constant, Data4 (res))
-      | DW_FORM_data8 -> let res = read_int64 s in Printf.printf "read data8 %Lx\n" res; (`constant, Data8 (res))
+      | DW_FORM_data4 ->  (`constant, Data4 (read_int32 s))
+      | DW_FORM_data8 ->  (`constant, Data8 (read_int64 s))
       | DW_FORM_sdata -> (`constant, Sdata (read_sleb128 s))
       | DW_FORM_udata -> (`constant, Udata (read_uleb128 s))
 
-      | DW_FORM_string -> let st = (`string, String (read_null_terminated_string s)) in
-                                begin
-                                    match (snd st) with
-                                    | String (ss) -> Printf.printf "read str %s\n" ss
-                                    | _ -> print_endline "nope"
-                                end;
-                                    st
-
-      | DW_FORM_strp -> begin let res = if !DwarfFormat.format == DWF_32BITS
+      | DW_FORM_string -> (`string, String (read_null_terminated_string s))
+      | DW_FORM_strp -> if !DwarfFormat.format == DWF_32BITS
                         then (`string, OFS_I32 (read_int32 s))
-                        else (`string, OFS_I64 (read_int64 s)) in begin
-                    match snd res with
-                    OFS_I32 i -> Printf.printf "read debug_str ofs %lx\n" i
-                    | OFS_I64 i -> Printf.printf "read debug_str ofs %Lx\n" i
-                    | _ -> Printf.printf "nn\n" end; res end
+                        else (`string, OFS_I64 (read_int64 s))
 
       | DW_FORM_flag -> (`flag, Flag (read_flag s))
       | DW_FORM_flag_present -> (`flag, FlagPresent)
@@ -164,19 +149,14 @@ let get_form s f =
               (`reference, OFS_I64 (read_int64 s))
     | DW_FORM_indirect -> (`indirect, Udata (read_uleb128 s))
     | DW_FORM_sec_offset ->
-            begin let res = if !DwarfFormat.format == DWF_32BITS
+            if !DwarfFormat.format == DWF_32BITS
             then
               (`ptr, OFS_I32 (read_int32 s))
             else
-              (`ptr, OFS_I64 (read_int64 s)) in begin
-            match snd res with
-            OFS_I32 i -> Printf.printf "read sec_ofs %lx\n" i
-            | OFS_I64 i -> Printf.printf "read sec_ofs %Lx\n" i
-            | _ -> Printf.printf "nn\n" end; res end
+              (`ptr, OFS_I64 (read_int64 s))
 
     (*is a block*)
     | DW_FORM_exprloc ->
                         let length = read_uleb128 s in
                         (`exprloc, Exprloc (length, read_block (Int64.to_int length) s))
-    | _ -> Printf.printf "wtf\n"; (`constant, None)
 

@@ -43,11 +43,7 @@ type dwarf_DIE =
       die_attribute_vals : (Class.form_class * Form_data.form_data) list;
     }
 
-(*TODO : distinguish between CU DIEs and child DIEs*)
-(*should return a tree with root as empty DIE except children with CU DIEs? or list of CU DIEs nodes?*)
 let readAllDIE abbrev_tbl s =
-
-    let offset = ref 0 in
 
     let empty_DIE =
     { die_ofs = 0;
@@ -102,28 +98,42 @@ let readAllDIE abbrev_tbl s =
 
           Printf.printf "now in level %d\n" lvl;
           let die_abbrev_code = read_uleb128 s in
+          let new_die = empty_DIE in
 
           match get_abbrev_decl abtbl die_abbrev_code with
                         (*null DIEs are caught here*)
-                        | None -> Printf.printf "abbrev decl for code %Ld not found\n" die_abbrev_code;
-                                  if lvl > 1 then readADIE abtbl s (lvl-1) None None else
-                                      begin match parent_die with Some(d) -> d | None -> empty_DIE end
+                        | None ->
+                                (*Printf.printf "abbrev decl for code %Ld not found\n" die_abbrev_code;*)
+                                  if lvl > 1 then readADIE abtbl s (lvl-1) None parent_die else
+                                      begin match parent_die with Some(d) -> d | None -> print_endline "damn"; empty_DIE end
                         | Some(d) ->
                                 let vals = read_DIE_attrs d s in
-                                let cu = {empty_DIE with
+                                let cu =
+                                    match parent_die with
+                                    Some(pd) ->
+                                    {new_die with
+                                            die_parent = parent_die;
+                                            die_attribute_vals = vals;
+                                            die_tag = d.abbrev_tag;
+                                            die_attributes = d.abbrev_attributes}
+                                    | None ->
+                                    {new_die with
+                                            die_cu_header = h;
                                             die_attribute_vals = vals;
                                             die_tag = d.abbrev_tag;
                                             die_attributes = d.abbrev_attributes} in
 
                               begin
-                              Printf.printf "abbrev decl for code %Ld found\n" die_abbrev_code;
+                              (*Printf.printf "abbrev decl for code %Ld found\n" die_abbrev_code;*)
                                             if d.abbrev_has_children then begin
                                                 Printf.printf "<%d>going down lvl %d\n" lvl (lvl+1);
-                                                readADIE abtbl s (lvl+1) None None
+                                                let child = readADIE abtbl s (lvl+1) None (Some cu) in
+                                                cu.die_children <- cu.die_children @ [child];
+                                                cu
                                             end
                                             else
-                                                if lvl == 0 then {cu with die_cu_header = h} else
-                                                readADIE abtbl s lvl None None
+                                                if lvl == 0 then cu else
+                                                let md = readADIE abtbl s lvl None cu.die_parent in md
                                         end in
 
     while DwarfUtils.peek s != None do
@@ -134,10 +144,10 @@ let readAllDIE abbrev_tbl s =
       begin
       match get_abbrev_tbl (Int64.to_int abbrev_offset) with
         | Some(curr_offset_tbl) -> begin
-                                    Printf.printf "abbrev for offset 0x%Lx found\n" abbrev_offset;
-                                    readADIE curr_offset_tbl s 0 (Some dw_DIE_CU_header) (Some empty_DIE); ()
+                                    let cuu = readADIE curr_offset_tbl s 0 (Some dw_DIE_CU_header) None in
+                                    res := !res @ [cuu]
                                     end
-        | None -> Printf.printf "abbrev for offset %Lu not found\n" abbrev_offset;
+        | None -> ()
       end
 
-    done
+    done; !res

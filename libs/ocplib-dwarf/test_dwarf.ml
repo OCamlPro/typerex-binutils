@@ -61,7 +61,10 @@ let _ =
                     let abbrev_section_stream = Stream_in.of_string @@ get_section t_original ".debug_abbrev" in
                     let abbrev_table = DwarfReader.read_abbrev_section abbrev_section_stream (Hashtbl.create 10) in
                     let sec = DwarfUtils.of_string @@ target_section in
-                    DwarfReader.read_CUs abbrev_table sec;
+                    let cus = DwarfReader.read_CUs abbrev_table sec in
+                    print_endline "Contents of the .debug_info section:";
+                    print_endline "";
+                    List.iter (fun d -> DwarfPrinter.string_of_DIE d 0) cus
                 end
         | ".debug_line" -> DwarfReader.read_lineprog_section section_stream;
         | ".debug_abbrev" ->
