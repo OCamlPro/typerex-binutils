@@ -19,8 +19,10 @@ open DwarfTypes
 open DwarfPrinter
 open DwarfFormat
 
+type offset = int
+
 type abbrev_decl_table = (int64, dwarf_abbreviation) Hashtbl.t
-type abbrev_offset_table = (int, abbrev_decl_table) Hashtbl.t
+type abbrev_offset_table = (offset, abbrev_decl_table) Hashtbl.t
 
 let (=*=) a b = match Int64.compare a b with
                     | 1 | -1 -> false
@@ -108,8 +110,7 @@ let read_abbrev_section s t =
   t
 
 let read_CUs abbrev_tbl s =
-    let cus = DwarfDIE.readAllDIE abbrev_tbl s in
-    Printf.printf "cus : %d\n" (List.length cus); cus
+    DwarfDIE.readAllDIE abbrev_tbl s
 
 let read_line_prog_header s =
   let header_offset = !(s.offset) in

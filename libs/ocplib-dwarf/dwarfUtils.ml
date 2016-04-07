@@ -45,6 +45,10 @@ let uint8_to_int8 x =
     let shift = Sys.word_size - 8 - 1 in
     (x lsl shift) asr shift
 
+let int16_to_uint16 x =
+    let shift = Sys.word_size - 16 - 1 in
+    (x lsl shift) lsr shift
+
 let read_sleb128 s =
   let rec hparse ~result ~shift =
     let i = read_int8 s in

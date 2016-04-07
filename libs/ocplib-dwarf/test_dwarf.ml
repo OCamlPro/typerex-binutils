@@ -26,6 +26,14 @@ let _ =
 
     let raw = ElfReader.RAW.read file in
 
+    let elf_class = match raw.elf_header.e_file_class with
+    | ELFCLASS32 -> "elf32-i386"
+    | ELFCLASS64 -> "elf64-x86-64"
+    | _ -> "unk" in
+    print_endline "";
+    Printf.printf "%s: \t file format %s\n" file elf_class;
+    print_endline "";
+
     let regex = (Str.regexp "debug") in
     let filter_debug_sections s_name = Str.string_match regex s_name 1 in
 

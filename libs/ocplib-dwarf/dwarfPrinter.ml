@@ -256,8 +256,8 @@ let string_of_form_val f s =
     match f with
 
         (*DW_FORM_addr *)
-        |  (`address, OFS_I32 (i)) -> Printf.sprintf "%s \t %lx\n" s i
-        |  (`address, OFS_I64 (i)) ->  Printf.sprintf "%s \t %Lx\n" s i
+        |  (`address, OFS_I32 (i)) -> Printf.sprintf "%s \t : 0x%lx\n" s i
+        |  (`address, OFS_I64 (i)) ->  Printf.sprintf "%s \t : 0x%Lx\n" s i
       (*DW_FORM_block1 *)
       |(`block, Block1 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
       (*DW_FORM_block2 *)
@@ -267,72 +267,75 @@ let string_of_form_val f s =
       (*DW_FORM_block *)
       | (`block, Block (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
       (*DW_FORM_data1*)
-      | (`constant, Data1 c) -> Printf.sprintf "%s \t %x\n" s (int_of_char c)
+      | (`constant, Data1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
       (*DW_FORM_data2 *)
-      | (`constant, Data2 h) -> Printf.sprintf "%s \t %x\n" s h
+      | (`constant, Data2 h) -> Printf.sprintf "%s \t : %d\n" s h
      (*DW_FORM_data4 *)
-      | (`constant, Data4 (w)) -> Printf.sprintf "%s \t %lx\n" s w;
+      | (`constant, Data4 (w)) -> Printf.sprintf "%s \t : 0x%lx\n" s w;
       (*DW_FORM_data8 *)
-      | (`constant, Data8 (dw)) -> Printf.sprintf "%s \t %Lx\n" s dw;
+      | (`constant, Data8 (dw)) -> Printf.sprintf "%s \t : %Lx\n" s dw;
       (*DW_FORM_sdata *)
-      | (`constant, Sdata (sleb128)) -> Printf.sprintf "%s \t %Lx\n" s sleb128
+      | (`constant, Sdata (sleb128)) -> Printf.sprintf "%s \t : %Lx\n" s sleb128
       (*DW_FORM_udata *)
-      | (`constant, Udata (uleb128)) -> Printf.sprintf "%s \t %Lx\n" s uleb128
+      | (`constant, Udata (uleb128)) -> Printf.sprintf "%s \t : %Lx\n" s uleb128
       (*DW_FORM_string *)
-      | (`string, String (ss)) -> Printf.sprintf "%s \t %s\n" s ss
+      | (`string, String (ss)) -> Printf.sprintf "%s \t : %s\n" s ss
 
       (*DW_FORM_strp*)
-        | (`string, OFS_I32 (i)) -> Printf.sprintf "%s \t %lx\n" s i
-        | (`string, OFS_I64 (i)) ->  Printf.sprintf "%s \t %Lx\n" s i
+        | (`string, OFS_I32 (i)) -> Printf.sprintf "%s \t : %lx\n" s i
+        | (`string, OFS_I64 (i)) ->  Printf.sprintf "%s \t : %Lx\n" s i
 
       (*DW_FORM_flag*)
       | (`flag, Flag f) -> let v = if f then "true" else "false" in Printf.sprintf "%s \t flag %s\n" s v
       (*DW_FORM_flag_present *)
-      | (`flag, FlagPresent) -> Printf.sprintf "%s \t flag present\n" s
+      | (`flag, FlagPresent) -> Printf.sprintf "%s \t : flag present\n" s
 
       (*DW_FORM_ref1 *)
-      | (`reference, Ref1 c) -> Printf.sprintf "%s \t %x\n" s (int_of_char c)
+      | (`reference, Ref1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
       (*DW_FORM_ref2 *)
-      | (`reference, Ref2 h) -> Printf.sprintf "%s \t %x\n" s h
+      | (`reference, Ref2 h) -> Printf.sprintf "%s \t : %x\n" s h
       (*DW_FORM_ref4 *)
-      | (`reference, Ref4 w) -> Printf.sprintf "%s \t %lx\n" s w
+      | (`reference, Ref4 w) -> Printf.sprintf "%s \t : %lx\n" s w
       (*DW_FORM_ref8 *)
-      | (`reference, Ref8 dw) -> Printf.sprintf "%s \t %Lx\n" s dw
+      | (`reference, Ref8 dw) -> Printf.sprintf "%s \t : %Lx\n" s dw
       (*DW_FORM_ref_udata *)
-      | (`reference, Ref_udata uleb128)  -> Printf.sprintf "%s \t %Lx\n" s uleb128
+      | (`reference, Ref_udata uleb128)  -> Printf.sprintf "%s \t : %Lx\n" s uleb128
       (*DW_FORM_ref_sig8 *)
-      | (`reference, OFS_I32 i) -> Printf.sprintf "%s \t %lx\n" s i
-      | (`reference, OFS_I64 i) -> Printf.sprintf "%s \t %Lx\n" s i
+      | (`reference, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
+      | (`reference, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
       (*DW_FORM_ref_addr *)
               (*(`reference, OFS_I32 (read_int32 s))*)
               (*(`reference, OFS_I64 (read_int64 s))*)
     (*DW_FORM_indirect *)
     | (`indirect, Udata uleb128) -> Printf.sprintf "%s \t %Lx\n" s uleb128
     (*DW_FORM_sec_offset *)
-      | (`ptr, OFS_I32 i) -> Printf.sprintf "%s \t %lx\n" s i
-      | (`ptr, OFS_I64 i) -> Printf.sprintf "%s \t %Lx\n" s i
+      | (`ptr, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
+      | (`ptr, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
 
     (*DW_FORM_exprloc *)
         | (`exprloc, Exprloc (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
         | (_, _) -> ""
 
-let string_of_DIE d lvl =
+let rec string_of_DIE d lvl =
     let rec he l1 l2 s =
-        print_endline "what";
         match l1, l2 with
         | [], [] -> s
-        | (_, f)::tl1, fv::tl2 -> print_endline "infinitity"; he tl1 tl2 (s ^ (string_of_form_val fv (Form.string_of_FORM f)))
+        | (at, _)::tl1, (ofs, fv)::tl2 -> he tl1 tl2 (s ^ (Printf.sprintf "   <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at)))
         | _, _ -> s in
     begin
     match d.die_cu_header with
     Some(h) ->
         begin
-        Printf.printf "Length: %Lu\n" h.unit_length;
-        Printf.printf "Version: %d\n" h.version;
-        Printf.printf "Abbrev offset: %Lu\n" h.abbrev_offset;
-        Printf.printf "Pointer size: %d\n" h.address_size;
+        Printf.printf "  Compilation Unit @ offset 0x%x\n" d.die_ofs;
+        Printf.printf "   Length: 0x%Lx\n" h.unit_length;
+        Printf.printf "   Version: %d\n" h.version;
+        Printf.printf "   Abbrev offset: 0x%Lx\n" h.abbrev_offset;
+        Printf.printf "   Pointer size: %d\n" h.address_size;
+        Printf.printf "<%d><%x>: Abbrev Number: Ld (%s)\n" lvl 0 (string_of_TAG d.die_tag);
         end
-    | _ -> ()
+    | _ -> Printf.printf "<%d><%x>: Abbrev Number: Ld (%s)\n" lvl d.die_ofs (string_of_TAG d.die_tag);
     end;
-    Printf.printf "<%d>Abbrev Number: Ld (%s)" lvl (string_of_TAG d.die_tag);
-    Printf.printf "%s\n" (he d.die_attributes d.die_attribute_vals "")
+    Printf.printf "%s\n" (he d.die_attributes d.die_attribute_vals "");
+    if d.die_children == []
+    then ()
+    else List.iter (fun hd -> string_of_DIE hd (lvl+1)) d.die_children

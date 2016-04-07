@@ -97,8 +97,8 @@ let get_form s f =
             length := !length - 1
         done;
         !arr in
-
-    match f with
+    let ofs = !(s.offset) in
+    let res = match f with
         DW_FORM_addr -> if !Flags.address_size_on_target == 4
                         then (`address, OFS_I32 (read_int32 s))
                         else (`address, OFS_I64 (read_int64 s))
@@ -116,7 +116,7 @@ let get_form s f =
       | DW_FORM_block -> let length = read_uleb128 s in
                          (`block, Block (length, read_block (Int64.to_int length) s))
       | DW_FORM_data1 -> (`constant, Data1 (read_char s))
-      | DW_FORM_data2 -> (`constant, Data2 (read_int16 s))
+      | DW_FORM_data2 -> (`constant, Data2 (int16_to_uint16 (read_int16 s)))
       | DW_FORM_data4 ->  (`constant, Data4 (read_int32 s))
       | DW_FORM_data8 ->  (`constant, Data8 (read_int64 s))
       | DW_FORM_sdata -> (`constant, Sdata (read_sleb128 s))
@@ -158,5 +158,6 @@ let get_form s f =
     (*is a block*)
     | DW_FORM_exprloc ->
                         let length = read_uleb128 s in
-                        (`exprloc, Exprloc (length, read_block (Int64.to_int length) s))
+                        (`exprloc, Exprloc (length, read_block (Int64.to_int length) s)) in
+    (ofs, res)
 
