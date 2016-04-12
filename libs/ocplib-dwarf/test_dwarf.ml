@@ -72,7 +72,13 @@ let _ =
                     let cus = DwarfReader.read_CUs abbrev_table sec in
                     print_endline "Contents of the .debug_info section:";
                     print_endline "";
-                    List.iter (fun d -> DwarfPrinter.string_of_DIE d 0) cus
+                    List.iter (fun t ->
+                        Zipper.fold_tree2 (DwarfPrinter.string_of_DIE) (fun x ys -> ()) t
+                        (*Zipper.fold_tree (fun x ys ->*)
+                            (*Printf.printf "now inside ofs %x\n" x.DwarfDIE.die_ofs;*)
+                            (*DwarfPrinter.string_of_DIE x*)
+                        (*) t*)
+                    ) cus
                 end
         | ".debug_line" -> DwarfReader.read_lineprog_section section_stream;
         | ".debug_abbrev" ->

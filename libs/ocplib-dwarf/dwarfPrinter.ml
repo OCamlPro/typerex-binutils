@@ -288,7 +288,7 @@ let string_of_form_val f s =
       (*DW_FORM_flag*)
       | (`flag, Flag f) -> let v = if f then "true" else "false" in Printf.sprintf "%s \t flag %s\n" s v
       (*DW_FORM_flag_present *)
-      | (`flag, FlagPresent) -> Printf.sprintf "%s \t : flag present\n" s
+      | (`flag, FlagPresent) -> Printf.sprintf "%s \t : 1\n" s
 
       (*DW_FORM_ref1 *)
       | (`reference, Ref1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
@@ -316,26 +316,23 @@ let string_of_form_val f s =
         | (`exprloc, Exprloc (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
         | (_, _) -> ""
 
-let rec string_of_DIE d lvl =
+let rec string_of_DIE d =
     let rec he l1 l2 s =
         match l1, l2 with
         | [], [] -> s
-        | (at, _)::tl1, (ofs, fv)::tl2 -> he tl1 tl2 (s ^ (Printf.sprintf "   <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at)))
+        | (at, _)::tl1, (ofs, fv)::tl2 -> he tl1 tl2 (s ^ (Printf.sprintf "    <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at)))
         | _, _ -> s in
     begin
     match d.die_cu_header with
     Some(h) ->
         begin
         Printf.printf "  Compilation Unit @ offset 0x%x\n" d.die_ofs;
-        Printf.printf "   Length: 0x%Lx\n" h.unit_length;
-        Printf.printf "   Version: %d\n" h.version;
-        Printf.printf "   Abbrev offset: 0x%Lx\n" h.abbrev_offset;
-        Printf.printf "   Pointer size: %d\n" h.address_size;
-        Printf.printf "<%d><%x>: Abbrev Number: Ld (%s)\n" lvl 0 (string_of_TAG d.die_tag);
+        Printf.printf "   Length: \t  0x%Lx\n" h.unit_length;
+        Printf.printf "   Version: \t  %d\n" h.version;
+        Printf.printf "   Abbrev Offset: 0x%Lx\n" h.abbrev_offset;
+        Printf.printf "   Pointer Size:  %d\n" h.address_size;
+        Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth 0 d.abbrev_nu (string_of_TAG d.die_tag);
         end
-    | _ -> Printf.printf "<%d><%x>: Abbrev Number: Ld (%s)\n" lvl d.die_ofs (string_of_TAG d.die_tag);
+    | _ -> Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth d.die_ofs d.abbrev_nu (string_of_TAG d.die_tag);
     end;
-    Printf.printf "%s\n" (he d.die_attributes d.die_attribute_vals "");
-    if d.die_children == []
-    then ()
-    else List.iter (fun hd -> string_of_DIE hd (lvl+1)) d.die_children
+    Printf.printf "%s" (he d.die_attributes d.die_attribute_vals "");

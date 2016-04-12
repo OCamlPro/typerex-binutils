@@ -1,3 +1,4 @@
+open Zipper
 open DwarfUtils
 open DwarfTypes
 open DwarfFormat
@@ -32,7 +33,9 @@ type dwarf_DIE =
       die_ofs : int;
       die_cu_header : dwarf_DIE_header option;
       die_parent : dwarf_DIE option;
-      mutable die_children : dwarf_DIE list;
+      has_children: bool;
+      depth:    int;
+      abbrev_nu    : int64;
       die_tag          : dwarf_TAG;
       die_attributes   : (dwarf_AT * Form.dwarf_FORM) list;
       die_attribute_vals : (int * (Class.form_class * Form_data.form_data)) list;
@@ -44,7 +47,9 @@ let readAllDIE abbrev_tbl s =
     { die_ofs = 0;
       die_cu_header = None;
       die_parent = None;
-      die_children = [];
+      has_children = false;
+      depth = 0;
+      abbrev_nu = Int64.zero;
       die_tag = DW_TAG_user Int64.zero;
       die_attributes = [];
       die_attribute_vals = [];
@@ -89,55 +94,86 @@ let readAllDIE abbrev_tbl s =
     let read_DIE_attrs d s =
          List.map (fun (n,f) -> Form.get_form s f) d.abbrev_attributes in
 
-    let rec readADIE abtbl s lvl h parent_die =
+    let deserialize input =
+        let rec helper z input =
+            let (cnode, p) = z in
+            match input with
+            | Some (x) :: rest ->
+                    let nn = Branch(x, []) in
+                    let upd_z = insert_down z nn in
+                    if x.has_children
+                    then
+                        let res = match cnode with
+                            Branch(_, []) -> move_down upd_z
+                            (* guaranteed to have at least 1 child *)
+                            |Branch(_,_::_) -> last_child_of_pos (move_down upd_z)
+                        in helper res rest
+                    else helper upd_z rest
+            | [None] -> z
+            | [] -> z
+            | None :: rest -> helper (move_up z) rest in
 
-          (*Printf.printf "now in level %d\n" lvl;*)
-          let abbrev_code_ofs = !(s.offset) in
+        match input with
+            | [] -> failwith "no input"
+            | None::tl -> failwith "invalid"
+            | Some(hd)::tl ->
+                   let (final_tree, path) = helper (leaf hd, Top) tl in
+                   match path with Top -> final_tree | _ -> failwith "problem with tree building" in
+
+    let readADIE abtbl s h cuofs =
+
+        let lvl = ref 0 in
+        let res = ref [] in
+        let exit = ref true in
+
+        let is_cu = ref true in
+        let abbrev_code_ofs = ref 0 in
+
+        while !exit do
+
+          abbrev_code_ofs := !(s.offset);
           let die_abbrev_code = read_uleb128 s in
-          let new_die = empty_DIE in
 
           match get_abbrev_decl abtbl die_abbrev_code with
-                        (*null DIEs are caught here*)
-                        | None ->
-                                (*Printf.printf "abbrev decl for code %Ld not found\n" die_abbrev_code;*)
-                                  if lvl > 1 then readADIE abtbl s (lvl-1) None parent_die else
-                                      begin
-                                          match parent_die with
-                                          Some(d) -> d
-                                            | None ->
-                                                    (*print_endline "damn"; *)
-                                                    empty_DIE
-                                      end
-                        | Some(d) ->
-                                let vals = read_DIE_attrs d s in
-                                let cu =
-                                    match parent_die with
-                                    Some(pd) ->
-                                    {new_die with
-                                            die_ofs = abbrev_code_ofs;
-                                            die_parent = parent_die;
-                                            die_attribute_vals = vals;
-                                            die_tag = d.abbrev_tag;
-                                            die_attributes = d.abbrev_attributes}
-                                    | None ->
-                                    {new_die with
-                                            die_cu_header = h;
-                                            die_attribute_vals = vals;
-                                            die_tag = d.abbrev_tag;
-                                            die_attributes = d.abbrev_attributes} in
+                | None -> begin
+                          res := !res @ [None];
+                          if !lvl > 1 then
+                            lvl := !lvl - 1
+                          else
+                              exit := false
+                          end
+                | Some(d) ->
+                        let vals = read_DIE_attrs d s in
+                        let cu =
+                            match !is_cu with
+                            false ->
+                            {empty_DIE with
+                                    die_ofs = !abbrev_code_ofs;
+                                    depth = !lvl;
+                                    die_attribute_vals = vals;
+                                    die_tag = d.abbrev_tag;
+                                    abbrev_nu = die_abbrev_code;
+                                    die_attributes = d.abbrev_attributes}
+                            | true ->
+                            is_cu := false;
+                            {empty_DIE with
+                                    die_ofs = cuofs;
+                                    depth = !lvl;
+                                    die_cu_header = h;
+                                    die_attribute_vals = vals;
+                                    die_tag = d.abbrev_tag;
+                                    abbrev_nu = die_abbrev_code;
+                                    die_attributes = d.abbrev_attributes} in
+                        res := !res @ [Some({cu with has_children = d.abbrev_has_children})];
 
-                              begin
-                              (*Printf.printf "abbrev decl for code %Ld found\n" die_abbrev_code;*)
-                                            if d.abbrev_has_children then begin
-                                                (*Printf.printf "<%d>going down lvl %d\n" lvl (lvl+1);*)
-                                                let child = readADIE abtbl s (lvl+1) None (Some cu) in
-                                                cu.die_children <- cu.die_children @ [child];
-                                                cu
-                                            end
-                                            else
-                                                if lvl == 0 then cu else
-                                                let md = readADIE abtbl s lvl None cu.die_parent in md
-                                        end in
+                        match d.abbrev_has_children, !lvl with
+                        | false, 0 ->
+                                exit := false
+                        | true, l -> begin
+                                lvl := !lvl + 1;
+                        end
+                        | false, l -> ()
+        done; !res in
 
     while DwarfUtils.peek s != None do
 
@@ -147,10 +183,12 @@ let readAllDIE abbrev_tbl s =
 
       begin
       match get_abbrev_tbl (Int64.to_int abbrev_offset) with
-        | Some(curr_offset_tbl) -> begin
-                                    let cuu = readADIE curr_offset_tbl s 0 (Some dw_DIE_CU_header) None in
-                                    res := !res @ [{cuu with die_ofs = !cu_offset}]
-                                    end
+        | Some(curr_offset_tbl) ->
+                begin
+                    let cu_dies = readADIE curr_offset_tbl s (Some(dw_DIE_CU_header)) !cu_offset in
+                    let cuu = deserialize cu_dies in
+                    res := !res @ [cuu]
+                end
         | None -> ()
       end;
       cu_offset := !(s.offset)
