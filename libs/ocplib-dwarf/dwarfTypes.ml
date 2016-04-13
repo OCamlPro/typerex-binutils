@@ -42,28 +42,6 @@ end
 
 module Int64 = Int64
 
-
-(* Section 7.21 - Line Number Information *)
-type dwarf_LN_OPS =
-    DW_LNS_copy
-  | DW_LNS_advance_pc of int * int
-  | DW_LNS_advance_line of Word64.t * int
-  | DW_LNS_set_file of Word64.t
-  | DW_LNS_set_column of Word64.t
-  | DW_LNS_negate_stmt
-  | DW_LNS_set_basic_block
-  | DW_LNS_const_add_pc of int * int
-  | DW_LNS_fixed_advance_pc of Word64.t
-  | DW_LNS_set_prologue_end
-  | DW_LNS_set_epilogue_begin
-  | DW_LNS_set_isa of Word64.t
-  | DW_LNE_end_sequence
-  | DW_LNE_set_address of Word64.t
-  | DW_LNE_define_file of string * Word64.t * Word64.t * Word64.t
-  | DW_LNE_set_discriminator of Word64.t
-  | DW_LNE_user of Word64.t
-  | DW_LN_spe_op of int * int * int * int * int
-
 type dwarf_TAG =
     DW_TAG_array_type
   | DW_TAG_class_type
@@ -123,9 +101,6 @@ type dwarf_TAG =
   | DW_TAG_condition
   | DW_TAG_shared_type
   | DW_TAG_user of Word64.t          (*   user extension *)
-  (*| DW_TAG_type_unit*)
-  (*| DW_TAG_rvalue_reference_type*)
-  (*| DW_TAG_template_alias*)
 
 type dwarf_AT  =
     DW_AT_sibling              (*   reference *)
@@ -222,44 +197,6 @@ type dwarf_AT  =
   | DW_AT_linkage_name         (*   string *)
   | DW_AT_user of Word64.t          (*   user extension *)
   | DW_AT_unk of Word64.t
-
-type dwarf_abbreviation =
-    { abbrev_num : Word64.t;
-      abbrev_tag : dwarf_TAG;
-      abbrev_has_children : bool;
-      abbrev_attributes : (dwarf_AT * Form.dwarf_FORM) list;
-    }
-
-type dwarf_CU_LN_header =
-  {
-    header_offset : int;
-    unit_length : Word64.t;
-    version : int;
-    header_len : Word64.t;
-    min_inst_len : int;
-    max_ops_per_inst : int;
-    default_is_stmt : int;
-    line_base : int;
-    line_range : int;
-    opcode_base : int;
-    standard_opcode_lengths : int list;
-    include_directories : string list;
-    file_names : (string * int64 * int64 * int64) list; }
-
-type dwarf_line_number_state =
-    { mutable address       : int;
-      mutable file          : int;
-      mutable op_index      : int;
-      mutable line          : int;
-      mutable column        : int;
-      mutable is_stmt       : int;
-      mutable basic_block    : bool;
-      mutable end_sequence   : bool;
-      mutable prologue_end   : bool;
-      mutable epilogue_begin : bool;
-      mutable isa           : int;
-      mutable discriminator : int;
-    }
 
 (*  Section 7.21 - Macro Information *)
 type dwarf_MACINFO =
@@ -728,9 +665,6 @@ let dw_tag =
         DW_TAG_user (Int64.of_int n)
       else
         Printf.kprintf failwith "unknown DW_TAG %x" n
-    (*| 0x41 -> DW_TAG_type_unit*)
-    (*| 0x42 -> DW_TAG_rvalue_reference_type*)
-    (*| 0x43 -> DW_TAG_template_alias*)
 
 let dw_at =
   let dw_at_lo_user = 0x2000 in
@@ -820,7 +754,6 @@ let dw_at =
   | 0x64 -> DW_AT_object_pointer
   | 0x65 -> DW_AT_endianity
   | 0x66 -> DW_AT_elemental
-  (*| 0x67 -> DW_AT_pure*)
   | 0x68 -> DW_AT_recursive
   | 0x69 -> DW_AT_signature
   | 0x6a -> DW_AT_main_subprogram

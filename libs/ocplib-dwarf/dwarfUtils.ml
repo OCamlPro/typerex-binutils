@@ -1,6 +1,5 @@
 open Arch
-
-(*what happens when I reach the end of the string?*)
+open DwarfFormat
 
 module LE = EndianString.LittleEndian
 module BE = EndianString.BigEndian
@@ -25,7 +24,7 @@ let wrap lf bf c =
         | BigEndian -> bf s.str !(s.offset) in
         s.offset := !(s.offset) + c;
         res
-        with _ -> Printf.kprintf failwith "end of string reached\n"
+        with _ -> Printf.kprintf failwith "end of string reached"
 
 let read_char = wrap LE.get_char BE.get_char 1
 
@@ -51,7 +50,7 @@ let int16_to_uint16 x =
 
 let read_sleb128 s =
   let rec hparse ~result ~shift =
-    let i = read_int8 s in
+    let i = read_uint8 s in
     let lower_7_bits = Int64.of_int (i land 0x7f) in
     let result = Int64.logor result (Int64.shift_left lower_7_bits shift) in
     let shift = shift + 7 in
@@ -59,7 +58,6 @@ let read_sleb128 s =
     if i < 128 then (result, shift, sign_bit_set)
     else hparse ~result ~shift
   in
-
   let (result, shift, sign_bit_set) = hparse ~result:Int64.zero ~shift:0 in
   if (shift < 64 && sign_bit_set) then
     Int64.logor result (Int64.neg (Int64.shift_left Int64.one shift))
@@ -68,7 +66,7 @@ let read_sleb128 s =
 
 let read_uleb128 s =
   let rec hparse ~result ~shift =
-    let i = read_int8 s in
+    let i = read_uint8 s in
     let lower_7_bits = Int64.of_int (i land 0x7f) in
     let result = Int64.logor result (Int64.shift_left lower_7_bits shift) in
     if i < 128 then result
@@ -86,4 +84,13 @@ let read_null_terminated_string t =
   done;
   match !result with
     | Some (r) -> r
-    | None -> Printf.printf "error\n"; ""
+    | None -> Printf.kprintf failwith "error trying to read string\n"
+
+let get_initial_length stream =
+  let sixty_four_bit_indicator = 0xffffffffl in
+
+  let first_word = read_int32 stream in
+      if first_word <> sixty_four_bit_indicator then
+          (DWF_32BITS, Int64.of_int32 first_word)
+      else
+        (DWF_64BITS, read_int64 stream)

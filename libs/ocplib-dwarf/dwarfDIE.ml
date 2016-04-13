@@ -2,30 +2,17 @@ open Zipper
 open DwarfUtils
 open DwarfTypes
 open DwarfFormat
-
-let get_initial_length stream =
-  let sixty_four_bit_indicator = 0xffffffffl in
-
-  let first_word = read_int32 stream in
-      if first_word <> sixty_four_bit_indicator then
-          (DWF_32BITS, Int64.of_int32 first_word)
-      else
-        (DWF_64BITS, read_int64 stream)
-
-let get_abbrev_offset s dwf =
-  match dwf with
-    | DWF_32BITS -> Int64.of_int32 @@ read_int32 s
-    | DWF_64BITS -> read_int64 s
+open DwarfAbbrev
 
 type dwarf_DIE_header =
     {
-    format: dwarf_format;
-    unit_length : int64;
-    abbrev_offset : int64;
-    address_size : int;
-    version : int;
-    initial_length_size : int;
-    abbrev_offset_size : int;
+      format: dwarf_format;
+      unit_length : int64;
+      abbrev_offset : int64;
+      address_size : int;
+      version : int;
+      initial_length_size : int;
+      abbrev_offset_size : int;
     }
 
 type dwarf_DIE =
@@ -40,6 +27,11 @@ type dwarf_DIE =
       die_attributes   : (dwarf_AT * Form.dwarf_FORM) list;
       die_attribute_vals : (int * (Class.form_class * Form_data.form_data)) list;
     }
+
+let get_abbrev_offset s dwf =
+  match dwf with
+    | DWF_32BITS -> Int64.of_int32 @@ read_int32 s
+    | DWF_64BITS -> read_int64 s
 
 let readAllDIE abbrev_tbl s =
 
@@ -66,7 +58,7 @@ let readAllDIE abbrev_tbl s =
         with Not_found -> None in
 
     let read_DIE_header s =
-        let (dwarf_format, initial_length) = get_initial_length s in
+        let (dwarf_format, initial_length) = DwarfUtils.get_initial_length s in
         let version = read_int16 s in
         let abbrev_offset = get_abbrev_offset s dwarf_format in
         let address_size = read_int8 s in
@@ -92,7 +84,7 @@ let readAllDIE abbrev_tbl s =
     let res = ref [] in
 
     let read_DIE_attrs d s =
-         List.map (fun (n,f) -> Form.get_form s f) d.abbrev_attributes in
+         List.map (fun (n,f) -> Form.get_form s f) d.DwarfAbbrev.abbrev_attributes in
 
     let deserialize input =
         let rec helper z input =

@@ -14,11 +14,9 @@
 
 open DwarfTypes
 
-type offset = int
+val read_CUs : DwarfAbbrev.abbrev_offset_table -> DwarfUtils.s -> DwarfDIE.dwarf_DIE Zipper.tree list
 
-type abbrev_decl_table = (int64, dwarf_abbreviation) Hashtbl.t
-type abbrev_offset_table = (offset, abbrev_decl_table) Hashtbl.t
+val read_line_prog_header : DwarfUtils.s -> DwarfLNP.dwarf_CU_LN_header
+val read_line_prog_stmts : DwarfUtils.s -> DwarfLNP.dwarf_CU_LN_header -> (int * DwarfLNP.dwarf_LN_OPS) list
 
-val read_CUs : abbrev_offset_table -> DwarfUtils.s -> DwarfDIE.dwarf_DIE Zipper.tree list
-val read_lineprog_section : Stream_in.s -> unit
-val read_abbrev_section : Stream_in.s -> abbrev_offset_table -> abbrev_offset_table
+val read_abbrev_section : DwarfUtils.s -> DwarfAbbrev.abbrev_offset_table -> DwarfAbbrev.abbrev_offset_table

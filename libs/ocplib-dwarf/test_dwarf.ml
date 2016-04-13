@@ -26,13 +26,13 @@ let _ =
 
     let raw = ElfReader.RAW.read file in
 
-    let elf_class = match raw.elf_header.e_file_class with
-    | ELFCLASS32 -> "elf32-i386"
-    | ELFCLASS64 -> "elf64-x86-64"
-    | _ -> "unk" in
-    print_endline "";
-    Printf.printf "%s: \t file format %s\n" file elf_class;
-    print_endline "";
+    (*let elf_class = match raw.elf_header.e_file_class with*)
+    (*| ELFCLASS32 -> "elf32-i386"*)
+    (*| ELFCLASS64 -> "elf64-x86-64"*)
+    (*| _ -> "unk" in*)
+    (*print_endline "";*)
+    (*Printf.printf "%s: \t file format %s\n" file elf_class;*)
+    (*print_endline "";*)
 
     let regex = (Str.regexp "debug") in
     let filter_debug_sections s_name = Str.string_match regex s_name 1 in
@@ -56,7 +56,7 @@ let _ =
     else
         begin
         let target_section = get_section t_original !single_section in
-        let section_stream = Stream_in.of_string target_section in
+        let section_stream = DwarfUtils.of_string target_section in
 
         if !hex_flag then begin
             dump_hex target_section;
@@ -66,7 +66,7 @@ let _ =
         match !single_section with
         | ".debug_info" ->
                 begin
-                    let abbrev_section_stream = Stream_in.of_string @@ get_section t_original ".debug_abbrev" in
+                    let abbrev_section_stream = DwarfUtils.of_string @@ get_section t_original ".debug_abbrev" in
                     let abbrev_table = DwarfReader.read_abbrev_section abbrev_section_stream (Hashtbl.create 10) in
                     let sec = DwarfUtils.of_string @@ target_section in
                     let cus = DwarfReader.read_CUs abbrev_table sec in
@@ -74,13 +74,17 @@ let _ =
                     print_endline "";
                     List.iter (fun t ->
                         Zipper.fold_tree2 (DwarfPrinter.string_of_DIE) (fun x ys -> ()) t
-                        (*Zipper.fold_tree (fun x ys ->*)
-                            (*Printf.printf "now inside ofs %x\n" x.DwarfDIE.die_ofs;*)
-                            (*DwarfPrinter.string_of_DIE x*)
-                        (*) t*)
                     ) cus
                 end
-        | ".debug_line" -> DwarfReader.read_lineprog_section section_stream;
+        | ".debug_line" ->
+                  print_endline "Raw dump of debug contents of section .debug_line:\n";
+                  while DwarfUtils.peek section_stream != None do
+                      let header = DwarfReader.read_line_prog_header section_stream in
+                      let ln = DwarfReader.read_line_prog_stmts section_stream header in
+
+                      DwarfPrinter.string_of_lineprog_header header;
+                      DwarfPrinter.string_of_lineprg ln
+                  done
         | ".debug_abbrev" ->
                 begin
                     let abbrev_table_by_offset = DwarfReader.read_abbrev_section section_stream (Hashtbl.create 10) in
@@ -88,7 +92,7 @@ let _ =
                                              DwarfPrinter.string_of_abbrev_section v;
                                              Printf.printf "----------------------\n") abbrev_table_by_offset
                 end
-        | _ -> print_endline "other sections not supported yet"
+        | ".debug_frame" | ".debug_ranges" | ".debug_loc" | _ -> print_endline "other sections not supported yet"
 
     end;
 

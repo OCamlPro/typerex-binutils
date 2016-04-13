@@ -15,6 +15,8 @@
 open Printf
 open DwarfTypes
 open Form_data
+open DwarfAbbrev
+open DwarfLNP
 open DwarfDIE
 
 let string_of_AT =
