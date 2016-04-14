@@ -1,10 +1,15 @@
 open ElfTypes.RAW
+open Printf
+open Zipper
+open DwarfDIE
 
 let hex_flag = ref false
+let dot_file = ref ""
 let single_section = ref ""
 
 let arg_list = Arg.align [
     "-xxd", Arg.Set hex_flag, " output hex dump of target section";
+    "-dot", Arg.String (fun s -> dot_file := s), " output graph of debug_info";
     "--section", Arg.String (fun s -> single_section := s), " target section";
   ]
 
@@ -25,14 +30,6 @@ let _ =
   Arg.parse arg_list (fun file ->
 
     let raw = ElfReader.RAW.read file in
-
-    (*let elf_class = match raw.elf_header.e_file_class with*)
-    (*| ELFCLASS32 -> "elf32-i386"*)
-    (*| ELFCLASS64 -> "elf64-x86-64"*)
-    (*| _ -> "unk" in*)
-    (*print_endline "";*)
-    (*Printf.printf "%s: \t file format %s\n" file elf_class;*)
-    (*print_endline "";*)
 
     let regex = (Str.regexp "debug") in
     let filter_debug_sections s_name = Str.string_match regex s_name 1 in
@@ -74,7 +71,28 @@ let _ =
                     print_endline "";
                     List.iter (fun t ->
                         Zipper.fold_tree2 (DwarfPrinter.string_of_DIE) (fun x ys -> ()) t
-                    ) cus
+                    ) cus;
+
+                    if !dot_file <> "" then begin
+
+                        let rec trav t = match t with
+                                        | Branch(x, []) -> [sprintf "    h_0x%x;\n" x.die_ofs]
+                                        | Branch(x, cs) -> List.map (fun c ->
+                                                match c with Branch(cc,_) ->
+                                                sprintf "    h_0x%x -> h_0x%x;\n" x.die_ofs cc.die_ofs) cs @
+                                                 List.concat @@ List.map trav cs in
+
+                        let oc = open_out (!dot_file ^ ".dot") in
+                        fprintf oc "digraph BST {\n";
+                        fprintf oc "    nodesep=0.4;\n";
+                        fprintf oc "    ranksep=0.5;\n";
+                        fprintf oc "    node [fontname=\"Arial\"];\n";
+                        (*fprintf oc "    margin=0.1;\n";*)
+                        let tes = List.nth cus 48 in
+
+                        List.iter (output_string oc) (trav tes);
+                        fprintf oc "}\n"; close_out oc;
+                    end
                 end
         | ".debug_line" ->
                   print_endline "Raw dump of debug contents of section .debug_line:\n";
