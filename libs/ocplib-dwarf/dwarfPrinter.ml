@@ -248,7 +248,8 @@ let string_of_lineprg l =
     List.iteri (fun i (ofs,op) -> printf "  [0x%08x]  %s" ofs (string_of_op op)) l;
     print_endline "\n"
 
-let string_of_form_val f s =
+let string_of_form_val f s dst =
+    let string_of_ofs ofs = DwarfUtils.read_null_terminated_string {dst with offset = ref ofs} in
     let print_block b =
         let rec h s l = match l with
                     | [] -> s
@@ -256,14 +257,13 @@ let string_of_form_val f s =
         h "" b
         in
     match f with
-
-        (*DW_FORM_addr *)
-        |  (`address, OFS_I32 (i)) -> Printf.sprintf "%s \t : 0x%lx\n" s i
-        |  (`address, OFS_I64 (i)) ->  Printf.sprintf "%s \t : 0x%Lx\n" s i
+      (*DW_FORM_addr *)
+      | (`address, OFS_I32 (i)) -> Printf.sprintf "%s \t : 0x%lx\n" s i
+      | (`address, OFS_I64 (i)) ->  Printf.sprintf "%s \t : 0x%Lx\n" s i
       (*DW_FORM_block1 *)
-      |(`block, Block1 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
+      | (`block, Block1 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
       (*DW_FORM_block2 *)
-      |(`block, Block2 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
+      | (`block, Block2 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
       (*DW_FORM_block4 *)
       | (`block, Block4 (length, b)) -> Printf.sprintf "%s \t Block of length %ld : %s\n" s length (print_block b)
       (*DW_FORM_block *)
@@ -282,16 +282,15 @@ let string_of_form_val f s =
       | (`constant, Udata (uleb128)) -> Printf.sprintf "%s \t : %Lx\n" s uleb128
       (*DW_FORM_string *)
       | (`string, String (ss)) -> Printf.sprintf "%s \t : %s\n" s ss
-
       (*DW_FORM_strp*)
-        | (`string, OFS_I32 (i)) -> Printf.sprintf "%s \t : %lx\n" s i
-        | (`string, OFS_I64 (i)) ->  Printf.sprintf "%s \t : %Lx\n" s i
-
+      | (`string, OFS_I32 (i)) ->
+        Printf.sprintf "%s : (indirect string, offset: 0x%lx): %s\n" s i (string_of_ofs (Int64.to_int (Int64.of_int32 i)))
+      | (`string, OFS_I64 (i)) ->
+        Printf.sprintf "%s : (indirect string, offset: 0x%Lx): %s\n" s i (string_of_ofs (Int64.to_int i))
       (*DW_FORM_flag*)
       | (`flag, Flag f) -> let v = if f then "true" else "false" in Printf.sprintf "%s \t flag %s\n" s v
       (*DW_FORM_flag_present *)
       | (`flag, FlagPresent) -> Printf.sprintf "%s \t : 1\n" s
-
       (*DW_FORM_ref1 *)
       | (`reference, Ref1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
       (*DW_FORM_ref2 *)
@@ -303,26 +302,24 @@ let string_of_form_val f s =
       (*DW_FORM_ref_udata *)
       | (`reference, Ref_udata uleb128)  -> Printf.sprintf "%s \t : %Lx\n" s uleb128
       (*DW_FORM_ref_sig8 *)
+      (*DW_FORM_ref_addr *)
       | (`reference, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
       | (`reference, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
-      (*DW_FORM_ref_addr *)
-              (*(`reference, OFS_I32 (read_int32 s))*)
-              (*(`reference, OFS_I64 (read_int64 s))*)
-    (*DW_FORM_indirect *)
-    | (`indirect, Udata uleb128) -> Printf.sprintf "%s \t %Lx\n" s uleb128
-    (*DW_FORM_sec_offset *)
+      (*DW_FORM_indirect *)
+      | (`indirect, Udata uleb128) -> Printf.sprintf "%s \t %Lx\n" s uleb128
+      (*DW_FORM_sec_offset *)
       | (`ptr, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
       | (`ptr, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
+      (*DW_FORM_exprloc *)
+      | (`exprloc, Exprloc (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
+      | (_, _) -> ""
 
-    (*DW_FORM_exprloc *)
-        | (`exprloc, Exprloc (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
-        | (_, _) -> ""
-
-let rec string_of_DIE d =
+let rec string_of_DIE d debug_str =
     let rec he l1 l2 s =
         match l1, l2 with
         | [], [] -> s
-        | (at, _)::tl1, (ofs, fv)::tl2 -> he tl1 tl2 (s ^ (Printf.sprintf "    <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at)))
+        | (at, _)::tl1, (ofs, fv)::tl2 ->
+            he tl1 tl2 (s ^ (Printf.sprintf "    <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at) debug_str))
         | _, _ -> s in
     begin
     match d.die_cu_header with

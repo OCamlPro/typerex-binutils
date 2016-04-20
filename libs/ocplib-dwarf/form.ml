@@ -159,6 +159,5 @@ let get_form s f =
     | DW_FORM_exprloc ->
                         let length = read_uleb128 s in
                         (`exprloc, Exprloc (length, read_block (Int64.to_int length) s)) in
-    (*Printf.printf "<%x>\n" ofs; *)
     (ofs, res)
 

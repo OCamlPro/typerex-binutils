@@ -64,13 +64,14 @@ let _ =
         | ".debug_info" ->
                 begin
                     let abbrev_section_stream = DwarfUtils.of_string @@ get_section t_original ".debug_abbrev" in
+                    let ds = DwarfUtils.of_string @@ get_section t_original ".debug_str" in
                     let abbrev_table = DwarfReader.read_abbrev_section abbrev_section_stream (Hashtbl.create 10) in
                     let sec = DwarfUtils.of_string @@ target_section in
                     let cus = DwarfReader.read_CUs abbrev_table sec in
                     print_endline "Contents of the .debug_info section:";
                     print_endline "";
                     List.iter (fun t ->
-                        Zipper.fold_tree2 (DwarfPrinter.string_of_DIE) (fun x ys -> ()) t
+                        Zipper.fold_tree2 (fun x -> DwarfPrinter.string_of_DIE x ds) (fun x ys -> ()) t
                     ) cus;
 
                     if !dot_file <> "" then begin
@@ -87,7 +88,6 @@ let _ =
                         fprintf oc "    nodesep=0.4;\n";
                         fprintf oc "    ranksep=0.5;\n";
                         fprintf oc "    node [fontname=\"Arial\"];\n";
-                        (*fprintf oc "    margin=0.1;\n";*)
                         let tes = List.nth cus 48 in
 
                         List.iter (output_string oc) (trav tes);
