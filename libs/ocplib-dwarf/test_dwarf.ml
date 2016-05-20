@@ -2,6 +2,8 @@ open ElfTypes.RAW
 open Printf
 open Zipper
 open DwarfDIE
+open DwarfTypes
+open Int32
 
 let hex_flag = ref false
 let dot_file = ref ""
@@ -88,7 +90,7 @@ let _ =
                         fprintf oc "    nodesep=0.4;\n";
                         fprintf oc "    ranksep=0.5;\n";
                         fprintf oc "    node [fontname=\"Arial\"];\n";
-                        let tes = List.nth cus 48 in
+                        let tes = List.nth cus 1 in
 
                         List.iter (output_string oc) (trav tes);
                         fprintf oc "}\n"; close_out oc;
@@ -110,7 +112,89 @@ let _ =
                                              DwarfPrinter.string_of_abbrev_section v;
                                              Printf.printf "----------------------\n") abbrev_table_by_offset
                 end
-        | ".debug_frame" | ".debug_ranges" | ".debug_loc" | _ -> print_endline "other sections not supported yet"
+        | ".debug_loc" ->
+            let abbrev_section_stream = DwarfUtils.of_string @@ get_section t_original ".debug_abbrev" in
+            let info_section_stream = DwarfUtils.of_string @@ get_section t_original ".debug_info" in
+            let abbrev_table = DwarfReader.read_abbrev_section abbrev_section_stream (Hashtbl.create 10) in
+            let cus = DwarfReader.read_CUs abbrev_table info_section_stream in
+
+            let ds = DwarfUtils.of_string @@ get_section t_original ".debug_str" in
+            let string_of_ofs ofs = DwarfUtils.read_null_terminated_string {ds with offset = ref (Int64.to_int ofs)} in
+
+            let ocaml_cu = List.nth cus 1 in
+
+            let rec attr2val target_at ats vals = match ats, vals with
+                |(at, _) :: tl1 , (_, (_, v)) :: tl2 -> if target_at == at then [v] else attr2val target_at tl1 tl2
+                | ((_, _)::_, [])
+                | ([], _::_)
+                | [], [] -> []
+            in
+
+            let attr_val x v = attr2val x v.die_attributes v.die_attribute_vals in
+            let get_name v =
+                    match attr_val DW_AT_name v with
+                    | [x] -> begin match x with | (OFS_I32 (i)) -> string_of_ofs @@ Int64.of_int32 i
+                                          | (OFS_I64 (i)) -> string_of_ofs @@ i
+                                          | _ -> failwith "nope" end
+                    | [] | _::_::_ -> failwith "malformed lol" in
+            let get_loc v =
+                    match attr_val DW_AT_location v with
+                    | [x] -> begin match x with | (OFS_I32 (i)) -> Int64.of_int32 i
+                                          | (OFS_I64 (i)) -> i
+                                          | _ -> failwith "nope" end
+                    | [] | _::_::_ -> failwith "malformed lol" in
+            let curr_spn = ref "" in
+
+            let rec find_subp z lres =
+                try
+                    let ptr = go_ahead z in
+                    let ctree = current_tree ptr in
+                    let cval = current_value' ptr in
+                    let pv =
+                      begin match cval.die_tag with
+                        | DW_TAG_subprogram -> begin
+
+                            if List.length cval.die_attributes == 3 then curr_spn := get_name cval;
+
+                            if List.length cval.die_attributes == 5
+                            then begin
+
+                                let sp_low_pc = match attr_val DW_AT_low_pc cval with
+                                    | [x] -> begin match x with | (OFS_I32 (i)) -> Int64.of_int32 i
+                                                          | (OFS_I64 (i)) -> i
+                                                          | _ -> failwith "nope" end
+                                    | [] | _::_::_ -> failwith "malformed lol"
+                                in
+                                Zipper.fold_tree (fun x l ->
+                                    let res =
+                                        match x.die_tag with
+                                            | DW_TAG_variable -> [(!curr_spn, sp_low_pc, true, x)]
+                                            | DW_TAG_formal_parameter -> [(!curr_spn, sp_low_pc, false, x)]
+                                            | _ -> [] in
+                                    res @ List.concat l) ctree
+                            end
+                            else []
+                        end
+                        | _ -> []
+                      end in
+                    find_subp ptr (lres @ pv)
+                with _ -> lres in
+
+            let pv = find_subp (ocaml_cu, Zipper.Top) [] in
+            let pv_map = Hashtbl.create 10 in
+
+            List.iter (fun (spn, sppc, var, atrs) ->
+                printf "%s %s : %Lx with %Lx\n" spn (get_name atrs) (get_loc atrs) sppc;
+                Hashtbl.add pv_map (get_loc atrs) (spn, (get_name atrs), sppc, var)) pv;
+
+            let locs = List.map
+                (fun (_,_,_,atrs) ->
+                    DwarfReader.read_locs {section_stream with offset =  ref (Int64.to_int @@ get_loc atrs)}
+                ) pv in
+
+            DwarfPrinter.print_locs locs pv_map
+
+        | ".debug_frame" | ".debug_ranges" |  _ -> print_endline "other sections not supported yet"
 
     end;
 

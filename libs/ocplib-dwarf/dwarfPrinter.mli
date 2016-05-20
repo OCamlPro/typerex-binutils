@@ -5,3 +5,5 @@ val string_of_lineprg : (int * DwarfLNP.dwarf_LN_OPS) list -> unit
 
 val string_of_abbrev_decl : DwarfAbbrev.dwarf_abbreviation -> unit
 val string_of_DIE : DwarfDIE.dwarf_DIE -> DwarfUtils.s -> unit
+
+val print_locs : DwarfLocs.location_list_entry list list -> (int64, (string * string * int64 * bool)) Hashtbl.t -> unit

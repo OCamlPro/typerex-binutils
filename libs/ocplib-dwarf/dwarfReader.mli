@@ -20,3 +20,5 @@ val read_line_prog_header : DwarfUtils.s -> DwarfLNP.dwarf_CU_LN_header
 val read_line_prog_stmts : DwarfUtils.s -> DwarfLNP.dwarf_CU_LN_header -> (int * DwarfLNP.dwarf_LN_OPS) list
 
 val read_abbrev_section : DwarfUtils.s -> DwarfAbbrev.abbrev_offset_table -> DwarfAbbrev.abbrev_offset_table
+
+val read_locs : DwarfUtils.s -> DwarfLocs.location_list_entry list

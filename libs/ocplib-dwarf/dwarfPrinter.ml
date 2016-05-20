@@ -18,6 +18,7 @@ open Form_data
 open DwarfAbbrev
 open DwarfLNP
 open DwarfDIE
+open DwarfLocs
 
 let string_of_AT =
   function
@@ -334,4 +335,28 @@ let rec string_of_DIE d debug_str =
         end
     | _ -> Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth d.die_ofs d.abbrev_nu (string_of_TAG d.die_tag);
     end;
-    Printf.printf "%s" (he d.die_attributes d.die_attribute_vals "");
+    Printf.printf "%s" (he d.die_attributes d.die_attribute_vals "")
+
+let rec string_of_locs tbl l =
+    let print_line loc =
+        printf "    %08Lx\t" loc.entry_offset;
+        match loc.start_offset, loc.end_offset with
+          | Ofs32 a, Ofs32 b -> printf "%08lx\t%08lx\t\n" a b
+          | Ofs64 a, Ofs64 b -> printf "%016Lx\t%016Lx\t\n" a b
+          | _, _ -> () in
+    match l with
+      | [] -> ()
+      | [x] -> printf "    %08Lx\t<End of list>\n\n" x.entry_offset
+      | hd :: tl -> print_line hd; string_of_locs tbl tl
+
+let print_locs l pvm =
+    let print_info x tbl =
+        let fst = List.hd x in
+        let (spn, pvn, base, is_var) = try
+            Hashtbl.find tbl fst.entry_offset
+        with Not_found -> ("", "", Int64.zero, false) in
+        printf "function : %s, %s : %s, base address : %Lx\n" spn (if is_var then "variable" else "parameter") pvn base in
+    print_endline "    Offset\tBegin\t\t\tEnd\t\t\tExpression";
+    List.iter (fun elt ->
+        print_info elt pvm;
+        string_of_locs pvm elt) l

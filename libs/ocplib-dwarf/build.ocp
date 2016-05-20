@@ -15,7 +15,8 @@
 begin library "ocplib-dwarf"
   files = [ "zipper.ml" "arch.ml" "dwarfUtils.ml" "form_data.ml"
             "class.ml" "dwarfFormat.ml" "flags.ml" "form.ml"
-            "dwarfTypes.ml" "dwarfPrinter.ml" "dwarfDIE.ml" "dwarfLNP.ml" "dwarfAbbrev.ml" "dwarfReader.ml" ]
+            "dwarfTypes.ml" "dwarfDIE.ml" "dwarfLNP.ml"
+            "dwarfLocs.ml" "dwarfAbbrev.ml" "dwarfReader.ml" "dwarfPrinter.ml" ]
   requires = [ "ocplib-elf" "ocplib-endian" ]
 end
 
