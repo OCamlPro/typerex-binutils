@@ -13,6 +13,8 @@
 (**************************************************************************)
 
 open Printf
+
+open Zipper
 open DwarfTypes
 open Form_data
 open DwarfAbbrev
@@ -350,13 +352,59 @@ let rec string_of_locs tbl l =
       | hd :: tl -> print_line hd; string_of_locs tbl tl
 
 let print_locs l pvm =
-    let print_info x tbl =
-        let fst = List.hd x in
-        let (spn, pvn, base, is_var) = try
-            Hashtbl.find tbl fst.entry_offset
-        with Not_found -> ("", "", Int64.zero, false) in
-        printf "function : %s, %s : %s, base address : %Lx\n" spn (if is_var then "variable" else "parameter") pvn base in
-    print_endline "    Offset\tBegin\t\t\tEnd\t\t\tExpression";
-    List.iter (fun elt ->
-        print_info elt pvm;
-        string_of_locs pvm elt) l
+  let print_info x tbl =
+    let fst = List.hd x in
+    let (spn, pvn, base, is_var) = try
+        Hashtbl.find tbl fst.entry_offset
+    with Not_found -> ("", "", Int64.zero, false) in
+    printf "function : %s, %s : %s, base address : %Lx\n" spn (if is_var then "variable" else "parameter") pvn base in
+
+  Hashtbl.iter (fun loc (spn, pvn, sppc, _) ->
+    printf "%s %s : %Lx with %Lx\n" spn pvn loc sppc
+  ) pvm;
+
+  print_endline "\n    Offset\tBegin\t\t\tEnd\t\t\tExpression";
+
+  List.iter (fun elt ->
+    print_info elt pvm;
+    string_of_locs pvm elt) l
+
+let print_LNPs l =
+  let rec h = function
+      | [] -> ()
+      | (hdr, lns) :: tl -> string_of_lineprog_header hdr; string_of_lineprg lns; h tl in
+  print_endline "Raw dump of debug contents of section .debug_line:\n";
+  h l
+
+let print_abbrevs t =
+  Hashtbl.iter (fun k v -> printf "abbrevs for offset 0x%x\n" k;
+                string_of_abbrev_section v;
+                printf "----------------------\n") t
+
+let print_DIEs l ds =
+  print_endline "Contents of the .debug_info section:";
+  print_endline "";
+  List.iter (fun t ->
+      Zipper.fold_tree2 (fun x -> string_of_DIE x ds) (fun x ys -> ()) t
+  ) l
+
+let dump_CU_tree fname cu =
+  let rec trav t =
+    match t with
+      | Branch(x, []) -> [sprintf "    h_0x%x;\n" x.die_ofs]
+      | Branch(x, cs) ->
+          List.map
+          (fun c ->
+            match c with Branch(cc,_) ->
+            sprintf "    h_0x%x -> h_0x%x;\n" x.die_ofs cc.die_ofs
+          ) cs
+          @ List.concat @@ List.map trav cs in
+
+  let oc = open_out (fname ^ ".dot") in
+  fprintf oc "digraph BST {\n";
+  fprintf oc "    nodesep=0.4;\n";
+  fprintf oc "    ranksep=0.5;\n";
+  fprintf oc "    node [fontname=\"Arial\"];\n";
+
+  List.iter (output_string oc) (trav cu);
+  fprintf oc "}\n"; close_out oc

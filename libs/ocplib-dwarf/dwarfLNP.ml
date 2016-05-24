@@ -244,3 +244,12 @@ let read_line_prog_stmts s h =
         | c -> exit := false;
     done;
     !res
+
+let readLNPs s =
+    let res = ref [] in
+    while DwarfUtils.peek s != None do
+        let header = read_line_prog_header s in
+        let ln = read_line_prog_stmts s header in
+        res := (header, ln) :: !res
+    done;
+    !res

@@ -1,9 +1,10 @@
-val string_of_abbrev_section : DwarfAbbrev.abbrev_decl_table -> unit
-val string_of_TAG : DwarfTypes.dwarf_TAG -> string
-val string_of_lineprog_header : DwarfLNP.dwarf_CU_LN_header -> unit
-val string_of_lineprg : (int * DwarfLNP.dwarf_LN_OPS) list -> unit
+val print_locs : DwarfLocs.location_list_entry list list
+                 -> (int64, (string * string * int64 * bool)) Hashtbl.t -> unit
 
-val string_of_abbrev_decl : DwarfAbbrev.dwarf_abbreviation -> unit
-val string_of_DIE : DwarfDIE.dwarf_DIE -> DwarfUtils.s -> unit
+val print_DIEs : DwarfDIE.dwarf_DIE Zipper.tree list -> DwarfUtils.s -> unit
+val dump_CU_tree : string -> DwarfDIE.dwarf_DIE Zipper.tree -> unit
 
-val print_locs : DwarfLocs.location_list_entry list list -> (int64, (string * string * int64 * bool)) Hashtbl.t -> unit
+val print_LNPs : (DwarfLNP.dwarf_CU_LN_header * (int * DwarfLNP.dwarf_LN_OPS) list) list
+                 -> unit
+
+val print_abbrevs : DwarfAbbrev.abbrev_offset_table -> unit

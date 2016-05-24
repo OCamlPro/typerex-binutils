@@ -12,13 +12,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open DwarfTypes
+val read_abbrev_section : DwarfUtils.s -> DwarfAbbrev.abbrev_offset_table -> DwarfAbbrev.abbrev_offset_table
 
 val read_CUs : DwarfAbbrev.abbrev_offset_table -> DwarfUtils.s -> DwarfDIE.dwarf_DIE Zipper.tree list
 
-val read_line_prog_header : DwarfUtils.s -> DwarfLNP.dwarf_CU_LN_header
-val read_line_prog_stmts : DwarfUtils.s -> DwarfLNP.dwarf_CU_LN_header -> (int * DwarfLNP.dwarf_LN_OPS) list
-
-val read_abbrev_section : DwarfUtils.s -> DwarfAbbrev.abbrev_offset_table -> DwarfAbbrev.abbrev_offset_table
+val read_header_and_lnp_stmts :
+    DwarfUtils.s ->
+    (DwarfLNP.dwarf_CU_LN_header * (int * DwarfLNP.dwarf_LN_OPS) list) list
 
 val read_locs : DwarfUtils.s -> DwarfLocs.location_list_entry list
+
+val read_caml_locs : DwarfUtils.s -> DwarfDIE.dwarf_DIE Zipper.tree -> DwarfUtils.s
+    -> DwarfLocs.location_list_entry list list * (int64, (string * string * int64 * bool)) Hashtbl.t
