@@ -339,7 +339,7 @@ let rec string_of_DIE d debug_str =
     end;
     Printf.printf "%s" (he d.die_attributes d.die_attribute_vals "")
 
-let rec string_of_locs tbl l =
+let rec string_of_locs l =
     let print_line loc =
         printf "    %08Lx\t" loc.entry_offset;
         match loc.start_offset, loc.end_offset with
@@ -349,9 +349,9 @@ let rec string_of_locs tbl l =
     match l with
       | [] -> ()
       | [x] -> printf "    %08Lx\t<End of list>\n\n" x.entry_offset
-      | hd :: tl -> print_line hd; string_of_locs tbl tl
+      | hd :: tl -> print_line hd; string_of_locs tl
 
-let print_locs l pvm =
+let print_caml_locs l pvm =
   let print_info x tbl =
     let fst = List.hd x in
     let (spn, pvn, base, is_var) = try
@@ -367,7 +367,12 @@ let print_locs l pvm =
 
   List.iter (fun elt ->
     print_info elt pvm;
-    string_of_locs pvm elt) l
+    string_of_locs elt) l
+
+let print_locs l =
+  print_endline "    Offset\tBegin\t\t\tEnd\t\t\tExpression";
+  List.iter (fun elt ->
+    string_of_locs elt) l
 
 let print_LNPs l =
   let rec h = function

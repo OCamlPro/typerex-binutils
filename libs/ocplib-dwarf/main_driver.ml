@@ -2,12 +2,14 @@ open ElfTypes.RAW
 open Printf
 
 let hex_flag = ref false
+let oml_loc_flag = ref false
 let dot_file = ref ""
 let single_section = ref ""
 
 let arg_list = Arg.align [
   "-xxd", Arg.Set hex_flag, " output hex dump of target section";
   "-dot", Arg.String (fun s -> dot_file := s), " output graph of debug_info";
+  "-ml", Arg.Set oml_loc_flag, " annotate ocaml params and vars with names";
   "--section", Arg.String (fun s -> single_section := s), " target section"; ]
 
 let arg_usage =
@@ -80,8 +82,13 @@ let _ =
           DwarfPrinter.print_abbrevs abbrev_table
 
         | ".debug_loc" ->
-          let locs, pv_map = DwarfReader.read_caml_locs target_section_stream ocaml_cu debug_str_section in
-          DwarfPrinter.print_locs locs pv_map
+          if !oml_loc_flag
+          then
+            let locs, pv_map = DwarfReader.read_caml_locs target_section_stream ocaml_cu debug_str_section in
+            DwarfPrinter.print_caml_locs locs pv_map
+          else
+            let locs = DwarfReader.read_all_locs target_section_stream in
+            DwarfPrinter.print_locs locs
 
         | ".debug_frame" | ".debug_ranges" |  _ -> print_endline "other sections not supported yet"
 

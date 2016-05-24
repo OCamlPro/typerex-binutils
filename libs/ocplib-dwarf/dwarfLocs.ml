@@ -43,41 +43,49 @@ let z64 = Ofs64 (Int64.zero)
 let read_a_loc s =
   let ofs = !(s.offset) in
   let start_addr, end_addr = get_addr_offsets s in
-  let blk_length = read_uint16 s in
   let blk =
-      if (start_addr = z32 && end_addr = z32)
-      || (start_addr = z64 && end_addr = z64) then []
-      else read_expr_block s blk_length in
+    if (start_addr = z32 && end_addr = z32)
+    || (start_addr = z64 && end_addr = z64) then []
+    else
+      let blk_length = read_uint16 s in
+      read_expr_block s blk_length in
   { start_offset = start_addr; end_offset = end_addr; dwarf_location_description = blk; entry_offset = Int64.of_int ofs }
 
-let rec read_locs_of_CU s =
+let rec read_locs s =
   let curr_loc = read_a_loc s in
   if (curr_loc.start_offset = z32 && curr_loc.end_offset = z32)
   || (curr_loc.start_offset = z64 && curr_loc.end_offset = z64) then [curr_loc]
-  else curr_loc :: read_locs_of_CU s
+  else curr_loc :: read_locs s
+
+(*Use of difference list more elegant as it avoids recursive cons and list reversal*)
+let rec read_all_locs s =
+  let rec h s acc =
+      if DwarfUtils.peek s == None then acc []
+    else let loc = read_locs s in h s (fun ys -> acc (loc :: ys)) in
+  h s (fun ys -> ys)
+
+let rec attr2val target_at ats vals = match ats, vals with
+  |(at, _) :: tl1 , (_, (_, v)) :: tl2 -> if target_at == at then [v] else attr2val target_at tl1 tl2
+  | ((_, _)::_, [])
+  | ([], _::_)
+  | [], [] -> []
+
+let attr_val x v = attr2val x v.die_attributes v.die_attribute_vals
+let get_ofs_from_attr a v =
+  match attr_val a v with
+  | [x] -> begin match x with | (OFS_I32 (i)) -> Int64.of_int32 i
+                        | (OFS_I64 (i)) -> i
+                        | _ -> failwith "not a offset" end
+  | [] | _::_::_ -> failwith "attr not found"
+
+let get_name v str_sec =
+  let string_of_ofs ofs = read_null_terminated_string
+                      {str_sec with offset = ref (Int64.to_int ofs)} in
+  string_of_ofs (get_ofs_from_attr DW_AT_name v)
+
+let get_loc v = get_ofs_from_attr DW_AT_location v
 
 let read_caml_locs loc_section cu debug_str_sec =
-
-  let string_of_ofs ofs = read_null_terminated_string
-                      {debug_str_sec with offset = ref (Int64.to_int ofs)} in
-
-  let rec attr2val target_at ats vals = match ats, vals with
-    |(at, _) :: tl1 , (_, (_, v)) :: tl2 -> if target_at == at then [v] else attr2val target_at tl1 tl2
-    | ((_, _)::_, [])
-    | ([], _::_)
-    | [], [] -> []
-  in
-
-  let attr_val x v = attr2val x v.die_attributes v.die_attribute_vals in
-  let get_ofs_from_attr a v =
-      match attr_val a v with
-      | [x] -> begin match x with | (OFS_I32 (i)) -> Int64.of_int32 i
-                            | (OFS_I64 (i)) -> i
-                            | _ -> failwith "not a offset" end
-      | [] | _::_::_ -> failwith "attr not found" in
-
-  let get_name v = string_of_ofs @@ get_ofs_from_attr DW_AT_name v in
-  let get_loc v = get_ofs_from_attr DW_AT_location v in
 
   let curr_spn = ref "" in
 
@@ -89,16 +97,12 @@ let read_caml_locs loc_section cu debug_str_sec =
       let pv =
         begin match cval.die_tag with
           | DW_TAG_subprogram -> begin
-            if List.length cval.die_attributes == 3 then curr_spn := get_name cval;
+            if List.length cval.die_attributes == 3 then curr_spn := get_name cval debug_str_sec;
 
             if List.length cval.die_attributes == 5
             then begin
-              let sp_low_pc = match attr_val DW_AT_low_pc cval with
-                  | [x] -> begin match x with | (OFS_I32 (i)) -> Int64.of_int32 i
-                                        | (OFS_I64 (i)) -> i
-                                        | _ -> failwith "nope" end
-                  | [] | _::_::_ -> failwith "malformed lol"
-              in
+
+              let sp_low_pc = get_ofs_from_attr DW_AT_low_pc cval in
               fold_tree (fun x l ->
                   let res =
                       match x.die_tag with
@@ -118,10 +122,41 @@ let read_caml_locs loc_section cu debug_str_sec =
   let pv_map = Hashtbl.create 10 in
 
   List.iter (fun (spn, sppc, var, atrs) ->
-    Hashtbl.add pv_map (get_loc atrs) (spn, (get_name atrs), sppc, var)) pv;
+    Hashtbl.add pv_map (get_loc atrs) (spn, (get_name atrs debug_str_sec), sppc, var)) pv;
 
   let locs = List.map
     (fun (_,_,_,atrs) ->
-        read_locs_of_CU {loc_section with offset =  ref (Int64.to_int @@ get_loc atrs)}
+        read_locs {loc_section with offset =  ref (Int64.to_int @@ get_loc atrs)}
     ) pv
   in locs, pv_map
+
+let get_c_params_and_vars cu debug_str_sec =
+
+  let curr_spn = ref "" in
+
+  let rec find_subp z lres =
+    try
+      let ptr = go_ahead z in
+      let ctree = current_tree ptr in
+      let cval = current_value' ptr in
+      let pv =
+        begin match cval.die_tag with
+          | DW_TAG_subprogram -> begin
+              curr_spn := get_name cval debug_str_sec;
+
+              let sp_low_pc = get_ofs_from_attr DW_AT_low_pc cval in
+
+              fold_tree (fun x l ->
+                  let res =
+                      match x.die_tag with
+                          | DW_TAG_variable -> [(!curr_spn, sp_low_pc, true, x)]
+                          | DW_TAG_formal_parameter -> [(!curr_spn, sp_low_pc, false, x)]
+                          | _ -> [] in
+                  res @ List.concat l) ctree
+          end
+          | _ -> []
+        end in
+      find_subp ptr (lres @ pv)
+    with _ -> lres in
+
+  find_subp (cu, Top) []

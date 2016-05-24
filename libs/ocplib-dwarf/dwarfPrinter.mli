@@ -1,5 +1,7 @@
-val print_locs : DwarfLocs.location_list_entry list list
+val print_caml_locs : DwarfLocs.location_list_entry list list
                  -> (int64, (string * string * int64 * bool)) Hashtbl.t -> unit
+
+val print_locs : DwarfLocs.location_list_entry list list -> unit
 
 val print_DIEs : DwarfDIE.dwarf_DIE Zipper.tree list -> DwarfUtils.s -> unit
 val dump_CU_tree : string -> DwarfDIE.dwarf_DIE Zipper.tree -> unit
