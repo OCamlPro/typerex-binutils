@@ -587,7 +587,7 @@ let num_to_reg_x86_64 =
   | 16 -> "rip"
   | _  -> "unk reg"
 
-let rec string_of_locs l =
+let rec string_of_locs l base =
   let reg_names = match Arch.address_size with
     4 -> num_to_reg_i386
    | _ -> num_to_reg_x86_64 in
@@ -599,13 +599,13 @@ let rec string_of_locs l =
     printf "    %08Lx " loc.entry_offset;
     let expr_str = print_expr_block loc.dwarf_location_description "" in
     match loc.start_offset, loc.end_offset with
-      | Ofs32 a, Ofs32 b -> printf "%08lx %08lx (%s)\n" a b expr_str
-      | Ofs64 a, Ofs64 b -> printf "%016Lx %016Lx (%s)\n" a b expr_str
+      | Ofs32 a, Ofs32 b -> printf "%08Lx %08Lx (%s)\n" (Int64.add (Int64.of_int32 a) base) (Int64.add (Int64.of_int32 b) base) expr_str
+      | Ofs64 a, Ofs64 b -> printf "%016Lx %016Lx (%s)\n" (Int64.add base a) (Int64.add base b) expr_str
       | _, _ -> () in
   match l with
     | [] -> ()
     | [x] -> printf "    %08Lx <End of list>\n" x.entry_offset
-    | hd :: tl -> print_line hd; string_of_locs tl
+    | hd :: tl -> print_line hd; string_of_locs tl base
 
 let print_caml_locs l pvm =
   let print_info x tbl =
@@ -620,15 +620,15 @@ let print_caml_locs l pvm =
   ) pvm;
 
   print_endline "\n    Offset   Begin\t\tEnd\t\tExpression";
-  List.iter (fun elt ->
+  List.iter (fun (b,elt) ->
     print_info elt pvm;
-    string_of_locs elt) l;
+    string_of_locs elt b) l;
   print_endline ""
 
 let print_locs l =
   print_endline "    Offset   Begin\t\tEnd\t\tExpression";
   List.iter (fun elt ->
-    string_of_locs elt) l;
+    string_of_locs elt (Int64.zero)) l;
   print_endline ""
 
 let print_LNPs l =

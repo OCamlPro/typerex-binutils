@@ -1,4 +1,4 @@
-val print_caml_locs : DwarfLocs.location_list_entry list list
+val print_caml_locs : (int64 * DwarfLocs.location_list_entry list) list
                  -> (int64, (string * string * int64 * bool)) Hashtbl.t -> unit
 
 val print_locs : DwarfLocs.location_list_entry list list -> unit

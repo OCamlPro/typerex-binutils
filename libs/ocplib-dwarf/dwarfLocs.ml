@@ -125,8 +125,8 @@ let read_caml_locs loc_section cu debug_str_sec =
     Hashtbl.add pv_map (get_loc atrs) (spn, (get_name atrs debug_str_sec), sppc, var)) pv;
 
   let locs = List.map
-    (fun (_,_,_,atrs) ->
-        read_locs {loc_section with offset =  ref (Int64.to_int @@ get_loc atrs)}
+    (fun (spn, sppc, var, atrs) ->
+        sppc, read_locs {loc_section with offset =  ref (Int64.to_int @@ get_loc atrs)}
     ) pv
   in locs, pv_map
 
