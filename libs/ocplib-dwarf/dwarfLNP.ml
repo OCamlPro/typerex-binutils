@@ -158,7 +158,7 @@ let read_line_prog_stmts s h =
                   add_entry_new_state !curr_state op [];
                   DW_LNE_end_sequence
           | 0x02 ->
-                  let operand = if !(Flags.address_size_on_target) == 4
+                  let operand = if Arch.address_size == 4
                                 then Int64.of_int32 @@ read_int32 s
                                 else read_int64 s in
                   !(curr_state).address <- Int64.to_int operand;

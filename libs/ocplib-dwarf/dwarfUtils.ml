@@ -132,7 +132,7 @@ let uleb128_from_list s =
 let int16_from_list t =
   match t with
   | first_byte :: second_byte :: tl ->
-      if Arch.big_endian then
+      if Arch.is_big_endian then
         (tl, (first_byte lsl 8) lor second_byte)
       else
         (tl, (second_byte lsl 8) lor first_byte)
@@ -145,7 +145,7 @@ let int32_from_list t =
     let b2 = Int32.of_int b2 in
     let b3 = Int32.of_int b3 in
     let b4 = Int32.of_int b4 in
-      if Arch.big_endian then
+      if Arch.is_big_endian then
         (tl, (Int32.logor (Int32.shift_left b1 24)
           (Int32.logor (Int32.shift_left b2 16)
             (Int32.logor (Int32.shift_left b3 8)
@@ -170,7 +170,7 @@ let int64_from_list t =
     let b6 = Int64.of_int b6 in
     let b7 = Int64.of_int b7 in
     let b8 = Int64.of_int b8 in
-  if Arch.big_endian then
+  if Arch.is_big_endian then
     (tl, (Int64.logor (Int64.shift_left b1 56)
       (Int64.logor (Int64.shift_left b2 48)
         (Int64.logor (Int64.shift_left b3 40)

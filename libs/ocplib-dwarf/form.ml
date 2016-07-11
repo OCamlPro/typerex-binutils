@@ -99,7 +99,7 @@ let get_form s f =
         !arr in
     let ofs = !(s.offset) in
     let res = match f with
-        DW_FORM_addr -> if !Flags.address_size_on_target == 4
+        DW_FORM_addr -> if Arch.address_size == 4
                         then (`address, OFS_I32 (read_int32 s))
                         else (`address, OFS_I64 (read_int64 s))
       (*blocks are arrays*)
