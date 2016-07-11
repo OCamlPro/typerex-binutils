@@ -4,11 +4,12 @@ open Printf
 let hex_flag = ref false
 let oml_loc_flag = ref false
 let dot_file = ref ""
+let cu_num = ref (-1)
 let single_section = ref ""
 
 let arg_list = Arg.align [
   "-xxd", Arg.Set hex_flag, " output hex dump of target section";
-  "-dot", Arg.String (fun s -> dot_file := s), " output graph of debug_info";
+  "-dot", Arg.Tuple ([Arg.Set_string dot_file; Arg.Set_int cu_num]), " output graph of debug_info";
   "-ml", Arg.Set oml_loc_flag, " annotate ocaml params and vars with names";
   "--section", Arg.String (fun s -> single_section := s), " target section"; ]
 
@@ -60,18 +61,22 @@ let _ =
 
       let target_section_stream = DwarfUtils.of_string target_section in
       let abbrev_section_stream = DwarfUtils.of_string @@ get_section t_original ".debug_abbrev" in
+
+      (* needed to read .debug_info *)
       let abbrev_table = DwarfReader.read_abbrev_section abbrev_section_stream (Hashtbl.create 10) in
 
       let debug_str_section = DwarfUtils.of_string @@ get_section t_original ".debug_str" in
 
       let info_section_stream = DwarfUtils.of_string @@ get_section t_original ".debug_info" in
       let cus = DwarfReader.read_CUs abbrev_table info_section_stream in
-      let ocaml_cu = List.nth cus 1 in
+      let nb_of_cus = List.length cus in
 
       match !single_section with
         | ".debug_info" ->
           DwarfPrinter.print_DIEs cus debug_str_section;
-          if !dot_file <> "" then
+          if !dot_file <> "" && !cu_num <> (-1) then
+            let idx = if !cu_num > (nb_of_cus-1) || !cu_num < 0 then failwith "not a valid CU index" else !cu_num in
+            let ocaml_cu = List.nth cus idx in
             DwarfPrinter.dump_CU_tree !dot_file ocaml_cu
 
         | ".debug_line" ->
@@ -82,8 +87,10 @@ let _ =
           DwarfPrinter.print_abbrevs abbrev_table
 
         | ".debug_loc" ->
+          (*second CU in a OCaml binary is the entry point module*)
           if !oml_loc_flag
           then
+            let ocaml_cu = List.nth cus 1 in
             let locs, pv_map = DwarfReader.read_caml_locs target_section_stream ocaml_cu debug_str_section in
             DwarfPrinter.print_caml_locs locs pv_map
           else
