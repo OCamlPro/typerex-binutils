@@ -17,10 +17,10 @@ val read_abbrev_section : DwarfUtils.s -> DwarfAbbrev.abbrev_offset_table -> Dwa
 val read_CUs : DwarfAbbrev.abbrev_offset_table -> DwarfUtils.s -> DwarfDIE.dwarf_DIE Zipper.tree list
 
 val read_header_and_lnp_stmts :
-    DwarfUtils.s ->
-    (DwarfLNP.dwarf_CU_LN_header * (int * DwarfLNP.dwarf_LN_OPS) list) list
+  DwarfUtils.s ->
+  (DwarfLNP.dwarf_CU_LN_header * (int * DwarfLNP.dwarf_LN_OPS) list) list
 
 val read_all_locs : DwarfUtils.s -> DwarfLocs.location_list_entry list list
 
 val read_caml_locs : DwarfUtils.s -> DwarfDIE.dwarf_DIE Zipper.tree -> DwarfUtils.s
-    -> (int64 * DwarfLocs.location_list_entry list) list * (int64, (string * string * int64 * bool)) Hashtbl.t
+  -> (int64 * DwarfLocs.location_list_entry list) list * (int64, (string * string * int64 * bool)) Hashtbl.t

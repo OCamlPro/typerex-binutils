@@ -4,6 +4,10 @@ For an introduction to the DWARF format, either read [this blog post](http://eli
 
 Details concerning the binary layout of the format is specified in Section 7 - Data Representation of the DWARF 4 standard that can be found [there.](http://dwarfstd.org/doc/DWARF4.pdf)
 
+Tested against x86_64 binaries generated with a private fork of the ocaml compiler suite with [DWARF emission](https://github.com/ocaml/ocaml/pull/574).
+Modifications may be in order if the DWARF structure generation changed since and
+when the DWARF emission feature hit trunk/a release.
+
 # Dependencies
 
 ocplib-endian, ocplib-elf

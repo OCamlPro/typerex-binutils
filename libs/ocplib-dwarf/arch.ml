@@ -1,3 +1,5 @@
+(*We assume the target binary is x86_64*)
+
 type t = LittleEndian | BigEndian
 
 let endianness = LittleEndian

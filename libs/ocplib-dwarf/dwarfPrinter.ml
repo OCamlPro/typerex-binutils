@@ -25,39 +25,39 @@ open DwarfLocs
 
 let lit =
   function
-    | 0x30 -> "DW_OP_lit0"
-    | 0x31 -> "DW_OP_lit1"
-    | 0x32 -> "DW_OP_lit2"
-    | 0x33 -> "DW_OP_lit3"
-    | 0x34 -> "DW_OP_lit4"
-    | 0x35 -> "DW_OP_lit5"
-    | 0x36 -> "DW_OP_lit6"
-    | 0x37 -> "DW_OP_lit7"
-    | 0x38 -> "DW_OP_lit8"
-    | 0x39 -> "DW_OP_lit9"
-    | 0x3a -> "DW_OP_lit10"
-    | 0x3b -> "DW_OP_lit11"
-    | 0x3c -> "DW_OP_lit12"
-    | 0x3d -> "DW_OP_lit13"
-    | 0x3e -> "DW_OP_lit14"
-    | 0x3f -> "DW_OP_lit15"
-    | 0x40 -> "DW_OP_lit16"
-    | 0x41 -> "DW_OP_lit17"
-    | 0x42 -> "DW_OP_lit18"
-    | 0x43 -> "DW_OP_lit19"
-    | 0x44 -> "DW_OP_lit20"
-    | 0x45 -> "DW_OP_lit21"
-    | 0x46 -> "DW_OP_lit22"
-    | 0x47 -> "DW_OP_lit23"
-    | 0x48 -> "DW_OP_lit24"
-    | 0x49 -> "DW_OP_lit25"
-    | 0x4a -> "DW_OP_lit26"
-    | 0x4b -> "DW_OP_lit27"
-    | 0x4c -> "DW_OP_lit28"
-    | 0x4d -> "DW_OP_lit29"
-    | 0x4e -> "DW_OP_lit30"
-    | 0x4f -> "DW_OP_lit31"
-    | _ -> "unk lit"
+  | 0x30 -> "DW_OP_lit0"
+  | 0x31 -> "DW_OP_lit1"
+  | 0x32 -> "DW_OP_lit2"
+  | 0x33 -> "DW_OP_lit3"
+  | 0x34 -> "DW_OP_lit4"
+  | 0x35 -> "DW_OP_lit5"
+  | 0x36 -> "DW_OP_lit6"
+  | 0x37 -> "DW_OP_lit7"
+  | 0x38 -> "DW_OP_lit8"
+  | 0x39 -> "DW_OP_lit9"
+  | 0x3a -> "DW_OP_lit10"
+  | 0x3b -> "DW_OP_lit11"
+  | 0x3c -> "DW_OP_lit12"
+  | 0x3d -> "DW_OP_lit13"
+  | 0x3e -> "DW_OP_lit14"
+  | 0x3f -> "DW_OP_lit15"
+  | 0x40 -> "DW_OP_lit16"
+  | 0x41 -> "DW_OP_lit17"
+  | 0x42 -> "DW_OP_lit18"
+  | 0x43 -> "DW_OP_lit19"
+  | 0x44 -> "DW_OP_lit20"
+  | 0x45 -> "DW_OP_lit21"
+  | 0x46 -> "DW_OP_lit22"
+  | 0x47 -> "DW_OP_lit23"
+  | 0x48 -> "DW_OP_lit24"
+  | 0x49 -> "DW_OP_lit25"
+  | 0x4a -> "DW_OP_lit26"
+  | 0x4b -> "DW_OP_lit27"
+  | 0x4c -> "DW_OP_lit28"
+  | 0x4d -> "DW_OP_lit29"
+  | 0x4e -> "DW_OP_lit30"
+  | 0x4f -> "DW_OP_lit31"
+  | _ -> "unk lit"
 
 let reg n regmap =
   let reg_num = n - 0x50 in
@@ -139,100 +139,100 @@ let string_of_op blk reg_map =
   let dw_op_lo_user = 0xe0 in
   let dw_op_hi_user = 0xff in
   match blk with
-    (*0 operand operations*)
-    | 0x06 :: tl -> (tl, "DW_OP_deref")
-    | 0x12 :: tl -> (tl, "DW_OP_dup")
-    | 0x13 :: tl -> (tl, "DW_OP_drop")
-    | 0x14 :: tl -> (tl, "DW_OP_over")
-    | 0x16 :: tl -> (tl, "DW_OP_swap")
-    | 0x17 :: tl -> (tl, "DW_OP_rot")
-    | 0x18 :: tl -> (tl, "DW_OP_xderef")
-    | 0x19 :: tl -> (tl, "DW_OP_abs")
-    | 0x1a :: tl -> (tl, "DW_OP_and")
-    | 0x1b :: tl -> (tl, "DW_OP_div")
-    | 0x1c :: tl -> (tl, "DW_OP_minus")
-    | 0x1d :: tl -> (tl, "DW_OP_mod")
-    | 0x1e :: tl -> (tl, "DW_OP_mul")
-    | 0x1f :: tl -> (tl, "DW_OP_neg")
-    | 0x20 :: tl -> (tl, "DW_OP_not")
-    | 0x21 :: tl -> (tl, "DW_OP_or")
-    | 0x22 :: tl -> (tl, "DW_OP_plus")
-    | 0x24 :: tl -> (tl, "DW_OP_shl")
-    | 0x25 :: tl -> (tl, "DW_OP_shr")
-    | 0x26 :: tl -> (tl, "DW_OP_shra")
-    | 0x27 :: tl -> (tl, "DW_OP_xor")
-    | 0x29 :: tl -> (tl, "DW_OP_eq")
-    | 0x2a :: tl -> (tl, "DW_OP_ge")
-    | 0x2b :: tl -> (tl, "DW_OP_gt")
-    | 0x2c :: tl -> (tl, "DW_OP_le")
-    | 0x2d :: tl -> (tl, "DW_OP_lt")
-    | 0x2e :: tl -> (tl, "DW_OP_ne")
-    | 0x96 :: tl -> (tl, "DW_OP_nop")
-    | 0x97 :: tl -> (tl, "DW_OP_push_object_address")
-    | 0x9b :: tl -> (tl, "DW_OP_form_tls_address")
-    | 0x9c :: tl -> (tl, "DW_OP_call_frame_cfa")
-    | 0x9f :: tl -> (tl, "DW_OP_stack_value")
-    (*1 operand operations*)
-    | 0x03 :: tl -> begin
+  (*0 operand operations*)
+  | 0x06 :: tl -> (tl, "DW_OP_deref")
+  | 0x12 :: tl -> (tl, "DW_OP_dup")
+  | 0x13 :: tl -> (tl, "DW_OP_drop")
+  | 0x14 :: tl -> (tl, "DW_OP_over")
+  | 0x16 :: tl -> (tl, "DW_OP_swap")
+  | 0x17 :: tl -> (tl, "DW_OP_rot")
+  | 0x18 :: tl -> (tl, "DW_OP_xderef")
+  | 0x19 :: tl -> (tl, "DW_OP_abs")
+  | 0x1a :: tl -> (tl, "DW_OP_and")
+  | 0x1b :: tl -> (tl, "DW_OP_div")
+  | 0x1c :: tl -> (tl, "DW_OP_minus")
+  | 0x1d :: tl -> (tl, "DW_OP_mod")
+  | 0x1e :: tl -> (tl, "DW_OP_mul")
+  | 0x1f :: tl -> (tl, "DW_OP_neg")
+  | 0x20 :: tl -> (tl, "DW_OP_not")
+  | 0x21 :: tl -> (tl, "DW_OP_or")
+  | 0x22 :: tl -> (tl, "DW_OP_plus")
+  | 0x24 :: tl -> (tl, "DW_OP_shl")
+  | 0x25 :: tl -> (tl, "DW_OP_shr")
+  | 0x26 :: tl -> (tl, "DW_OP_shra")
+  | 0x27 :: tl -> (tl, "DW_OP_xor")
+  | 0x29 :: tl -> (tl, "DW_OP_eq")
+  | 0x2a :: tl -> (tl, "DW_OP_ge")
+  | 0x2b :: tl -> (tl, "DW_OP_gt")
+  | 0x2c :: tl -> (tl, "DW_OP_le")
+  | 0x2d :: tl -> (tl, "DW_OP_lt")
+  | 0x2e :: tl -> (tl, "DW_OP_ne")
+  | 0x96 :: tl -> (tl, "DW_OP_nop")
+  | 0x97 :: tl -> (tl, "DW_OP_push_object_address")
+  | 0x9b :: tl -> (tl, "DW_OP_form_tls_address")
+  | 0x9c :: tl -> (tl, "DW_OP_call_frame_cfa")
+  | 0x9f :: tl -> (tl, "DW_OP_stack_value")
+  (*1 operand operations*)
+  | 0x03 :: tl -> begin
       let op = "DW_OP_addr" in
       match Arch.address_size with
-        | 4 -> begin let (r, v) = int32_from_list tl in (r, sprintf "%s: %lx" op v) end
-        | _ -> begin let (r, v) = int64_from_list tl in (r, sprintf "%s: %Lx" op v) end end
-    | 0x08 :: x :: tl -> (tl, sprintf "DW_OP_const1u: %d" x)
-    | 0x09 :: x :: tl -> (tl, sprintf "DW_OP_const1s: %d" x)
-    | 0x0a :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_const2u: %d" v)
-    | 0x0b :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_const2s: %d" v)
-    | 0x0c :: tl -> let (r, v) = int32_from_list tl in (r, sprintf "DW_OP_const4u: %ld" v)
-    | 0x0d :: tl -> let (r, v) = int32_from_list tl in (r, sprintf "DW_OP_const4s: %ld" v)
-    | 0x0e :: tl -> let (r, v) = int64_from_list tl in (r, sprintf "DW_OP_const8u: %Ld" v)
-    | 0x0f :: tl -> let (r, v) = int64_from_list tl in (r, sprintf "DW_OP_const8s: %Ld" v)
-    | 0x10 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_constu: %Ld" v)
-    | 0x11 :: tl -> let (r, v) = sleb128_from_list tl in (r, sprintf "DW_OP_consts: %Ld" v)
-    | 0x15 :: x :: tl -> (tl, sprintf "DW_OP_pick (%d)" x)
-    | 0x23 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_plus_uconst %Ld" v)
-    | 0x28 :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_bra %d" v)
-    | 0x2f :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_skip %d" v)
-    | 0x90 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_regx: %Ld (%s)" v (reg_map (Int64.to_int v)))
-    | 0x91 :: tl -> let (r, v) = sleb128_from_list tl in (r, sprintf "DW_OP_fbreg: %Ld" v)
-    | 0x93 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_piece: %Ld" v)
-    | 0x94 :: x :: tl -> (tl, sprintf "DW_OP_deref_size (%d)" x)
-    | 0x95 :: x :: tl -> (tl, sprintf "DW_OP_xderef_size (%d)" x)
-    | 0x98 :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_call2 0x%d" v)
-    | 0x99 :: tl -> let (r, v) = int32_from_list tl in (r, sprintf "DW_OP_call4 0x%ld" v)
-    | 0x9a :: tl ->
-      begin
+      | 4 -> begin let (r, v) = int32_from_list tl in (r, sprintf "%s: %lx" op v) end
+      | _ -> begin let (r, v) = int64_from_list tl in (r, sprintf "%s: %Lx" op v) end end
+  | 0x08 :: x :: tl -> (tl, sprintf "DW_OP_const1u: %d" x)
+  | 0x09 :: x :: tl -> (tl, sprintf "DW_OP_const1s: %d" x)
+  | 0x0a :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_const2u: %d" v)
+  | 0x0b :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_const2s: %d" v)
+  | 0x0c :: tl -> let (r, v) = int32_from_list tl in (r, sprintf "DW_OP_const4u: %ld" v)
+  | 0x0d :: tl -> let (r, v) = int32_from_list tl in (r, sprintf "DW_OP_const4s: %ld" v)
+  | 0x0e :: tl -> let (r, v) = int64_from_list tl in (r, sprintf "DW_OP_const8u: %Ld" v)
+  | 0x0f :: tl -> let (r, v) = int64_from_list tl in (r, sprintf "DW_OP_const8s: %Ld" v)
+  | 0x10 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_constu: %Ld" v)
+  | 0x11 :: tl -> let (r, v) = sleb128_from_list tl in (r, sprintf "DW_OP_consts: %Ld" v)
+  | 0x15 :: x :: tl -> (tl, sprintf "DW_OP_pick (%d)" x)
+  | 0x23 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_plus_uconst %Ld" v)
+  | 0x28 :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_bra %d" v)
+  | 0x2f :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_skip %d" v)
+  | 0x90 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_regx: %Ld (%s)" v (reg_map (Int64.to_int v)))
+  | 0x91 :: tl -> let (r, v) = sleb128_from_list tl in (r, sprintf "DW_OP_fbreg: %Ld" v)
+  | 0x93 :: tl -> let (r, v) = uleb128_from_list tl in (r, sprintf "DW_OP_piece: %Ld" v)
+  | 0x94 :: x :: tl -> (tl, sprintf "DW_OP_deref_size (%d)" x)
+  | 0x95 :: x :: tl -> (tl, sprintf "DW_OP_xderef_size (%d)" x)
+  | 0x98 :: tl -> let (r, v) = int16_from_list tl in (r, sprintf "DW_OP_call2 0x%d" v)
+  | 0x99 :: tl -> let (r, v) = int32_from_list tl in (r, sprintf "DW_OP_call4 0x%ld" v)
+  | 0x9a :: tl ->
+    begin
       let op = "DW_OP_call_ref" in
       match Arch.address_size with
-        | 4 -> begin let (r, v) = int32_from_list tl in (r, sprintf "%s : 0%lx" op v) end
-        | _ -> begin let (r, v) = int64_from_list tl in (r, sprintf "%s : 0%Lx" op v) end
-      end
-    (*2 operands operations*)
-    | 0x9d :: tl ->
-            let (r1, uleb_size) = uleb128_from_list tl in
-            let (r2, uleb_ofs) = uleb128_from_list r1 in
-            (r2, sprintf "DW_OP_bit_piece (%Ld) : 0x%Lx" uleb_size uleb_ofs)
-    | 0x9e :: tl ->
-            let rec drop n = function
-                | [] -> []
-                | h :: t as l -> if n = 0 then l else drop (n-1) t
-            in
-            let (r1, uleb_size) = uleb128_from_list tl in
-            (drop (Int64.to_int uleb_size) r1, sprintf "DW_OP_implicit_value (%Ld) : " uleb_size)
-    | 0x92 :: tl ->
-            let (r1, uleb_reg) = uleb128_from_list tl in
-            let (r2, sleb_ofs) = sleb128_from_list r1 in
-            (r2, sprintf "DW_OP_bregx: %Ld (%s) %Lx" uleb_reg (reg_map @@ Int64.to_int uleb_reg) sleb_ofs)
+      | 4 -> begin let (r, v) = int32_from_list tl in (r, sprintf "%s : 0%lx" op v) end
+      | _ -> begin let (r, v) = int64_from_list tl in (r, sprintf "%s : 0%Lx" op v) end
+    end
+  (*2 operands operations*)
+  | 0x9d :: tl ->
+    let (r1, uleb_size) = uleb128_from_list tl in
+    let (r2, uleb_ofs) = uleb128_from_list r1 in
+    (r2, sprintf "DW_OP_bit_piece (%Ld) : 0x%Lx" uleb_size uleb_ofs)
+  | 0x9e :: tl ->
+    let rec drop n = function
+      | [] -> []
+      | h :: t as l -> if n = 0 then l else drop (n-1) t
+    in
+    let (r1, uleb_size) = uleb128_from_list tl in
+    (drop (Int64.to_int uleb_size) r1, sprintf "DW_OP_implicit_value (%Ld) : " uleb_size)
+  | 0x92 :: tl ->
+    let (r1, uleb_reg) = uleb128_from_list tl in
+    let (r2, sleb_ofs) = sleb128_from_list r1 in
+    (r2, sprintf "DW_OP_bregx: %Ld (%s) %Lx" uleb_reg (reg_map @@ Int64.to_int uleb_reg) sleb_ofs)
 
-    | [] -> ([], "")
-    | n :: tl when n >= 0x30 && n < 0x50 -> (tl, lit n)
-    | n :: tl when n >= 0x50 && n < 0x70 -> (tl, reg n reg_map)
-    | n :: tl when n >= 0x70 && n < 0x90 ->
-            let (rest, ofs) = sleb128_from_list tl in (rest, breg n ofs reg_map)
-    | n :: tl ->
-      if n >= dw_op_lo_user && n <= dw_op_hi_user then
-        (tl, "DW_OP_user")
-      else
-        (tl, sprintf "unk_op_%d" n)
+  | [] -> ([], "")
+  | n :: tl when n >= 0x30 && n < 0x50 -> (tl, lit n)
+  | n :: tl when n >= 0x50 && n < 0x70 -> (tl, reg n reg_map)
+  | n :: tl when n >= 0x70 && n < 0x90 ->
+    let (rest, ofs) = sleb128_from_list tl in (rest, breg n ofs reg_map)
+  | n :: tl ->
+    if n >= dw_op_lo_user && n <= dw_op_hi_user then
+      (tl, "DW_OP_user")
+    else
+      (tl, sprintf "unk_op_%d" n)
 
 let string_of_AT =
   function
@@ -398,6 +398,7 @@ let string_of_abbrev_decl d =
   if d.abbrev_has_children then printf "[has children]\n" else printf "[no children]\n";
   let _ = List.map (fun (n,f) -> printf "%s %s\n" (string_of_AT n) (Form.string_of_FORM f)) d.abbrev_attributes in ()
 
+(*Non-ordered output*)
 let string_of_abbrev_section tbl =
   Hashtbl.iter (fun k v -> string_of_abbrev_decl v; printf "\n") tbl
 
@@ -423,22 +424,22 @@ let string_of_lineprog_header h =
   if h.include_directories == []
   then print_endline "The Directory Table is empty.\n"
   else begin
-      print_endline " The Directory Table:";
-      List.iteri (fun i a -> printf "  %d\t%s\n" (i+1) a) h.include_directories;
-      print_endline ""
+    print_endline " The Directory Table:";
+    List.iteri (fun i a -> printf "  %d\t%s\n" (i+1) a) h.include_directories;
+    print_endline ""
   end;
 
   if h.file_names == []
   then printf "The File Name Table is empty.\n"
   else begin
-      print_endline " The File Name Table:";
-      printf "  Entry\tDir\tTime\tSize\tName\n";
-      List.iteri (fun i (a,b,c,d) -> printf "  %d\t%Ld\t%Ld\t%Ld\t%s\n" (i+1) b c d a) h.file_names;
-      print_endline "";
+    print_endline " The File Name Table:";
+    printf "  Entry\tDir\tTime\tSize\tName\n";
+    List.iteri (fun i (a,b,c,d) -> printf "  %d\t%Ld\t%Ld\t%Ld\t%s\n" (i+1) b c d a) h.file_names;
+    print_endline "";
   end
 
 let string_of_lns_op =
-    function
+  function
     DW_LNS_copy -> sprintf "DW_LNS_copy \n"
   | DW_LNS_advance_pc (n, adr) -> sprintf "DW_LNS_advance_pc by %d to 0x%x\n" n adr
   | DW_LNS_advance_line (n, l) -> sprintf "DW_LNS_advance_line by %Ld to %d\n" n l
@@ -459,95 +460,95 @@ let string_of_lns_op =
   | DW_LN_spe_op (opc, aa, adr, la, li) -> sprintf "DW_LN_spe_op %d advance address by %d to 0x%x and line by %d to %d\n" opc aa adr la li
 
 let string_of_lineprg l =
-    print_endline "Line Number Statements:";
-    List.iteri (fun i (ofs,op) -> printf "  [0x%08x]  %s" ofs (string_of_lns_op op)) l;
-    print_endline "\n"
+  print_endline "Line Number Statements:";
+  List.iteri (fun i (ofs,op) -> printf "  [0x%08x]  %s" ofs (string_of_lns_op op)) l;
+  print_endline "\n"
 
 let string_of_form_val f s dst =
-    let string_of_ofs ofs = read_null_terminated_string {dst with offset = ref ofs} in
-    let print_block b =
-        let rec h s l = match l with
-                    | [] -> s
-                    | hd :: tl -> h (s ^ Printf.sprintf "%x " (int_of_char hd)) tl in
-        h "" b
-        in
-    match f with
-      (*DW_FORM_addr *)
-      | (`address, OFS_I32 (i)) -> Printf.sprintf "%s \t : 0x%lx\n" s i
-      | (`address, OFS_I64 (i)) ->  Printf.sprintf "%s \t : 0x%Lx\n" s i
-      (*DW_FORM_block1 *)
-      | (`block, Block1 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
-      (*DW_FORM_block2 *)
-      | (`block, Block2 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
-      (*DW_FORM_block4 *)
-      | (`block, Block4 (length, b)) -> Printf.sprintf "%s \t Block of length %ld : %s\n" s length (print_block b)
-      (*DW_FORM_block *)
-      | (`block, Block (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
-      (*DW_FORM_data1*)
-      | (`constant, Data1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
-      (*DW_FORM_data2 *)
-      | (`constant, Data2 h) -> Printf.sprintf "%s \t : %d\n" s h
-     (*DW_FORM_data4 *)
-      | (`constant, Data4 (w)) -> Printf.sprintf "%s \t : 0x%lx\n" s w;
-      (*DW_FORM_data8 *)
-      | (`constant, Data8 (dw)) -> Printf.sprintf "%s \t : %Lx\n" s dw;
-      (*DW_FORM_sdata *)
-      | (`constant, Sdata (sleb128)) -> Printf.sprintf "%s \t : %Lx\n" s sleb128
-      (*DW_FORM_udata *)
-      | (`constant, Udata (uleb128)) -> Printf.sprintf "%s \t : %Lx\n" s uleb128
-      (*DW_FORM_string *)
-      | (`string, String (ss)) -> Printf.sprintf "%s \t : %s\n" s ss
-      (*DW_FORM_strp*)
-      | (`string, OFS_I32 (i)) ->
-        Printf.sprintf "%s : (indirect string, offset: 0x%lx): %s\n" s i (string_of_ofs (Int64.to_int (Int64.of_int32 i)))
-      | (`string, OFS_I64 (i)) ->
-        Printf.sprintf "%s : (indirect string, offset: 0x%Lx): %s\n" s i (string_of_ofs (Int64.to_int i))
-      (*DW_FORM_flag*)
-      | (`flag, Flag f) -> let v = if f then "true" else "false" in Printf.sprintf "%s \t flag %s\n" s v
-      (*DW_FORM_flag_present *)
-      | (`flag, FlagPresent) -> Printf.sprintf "%s \t : 1\n" s
-      (*DW_FORM_ref1 *)
-      | (`reference, Ref1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
-      (*DW_FORM_ref2 *)
-      | (`reference, Ref2 h) -> Printf.sprintf "%s \t : %x\n" s h
-      (*DW_FORM_ref4 *)
-      | (`reference, Ref4 w) -> Printf.sprintf "%s \t : %lx\n" s w
-      (*DW_FORM_ref8 *)
-      | (`reference, Ref8 dw) -> Printf.sprintf "%s \t : %Lx\n" s dw
-      (*DW_FORM_ref_udata *)
-      | (`reference, Ref_udata uleb128)  -> Printf.sprintf "%s \t : %Lx\n" s uleb128
-      (*DW_FORM_ref_sig8 *)
-      (*DW_FORM_ref_addr *)
-      | (`reference, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
-      | (`reference, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
-      (*DW_FORM_indirect *)
-      | (`indirect, Udata uleb128) -> Printf.sprintf "%s \t %Lx\n" s uleb128
-      (*DW_FORM_sec_offset *)
-      | (`ptr, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
-      | (`ptr, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
-      (*DW_FORM_exprloc *)
-      | (`exprloc, Exprloc (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
-      | (_, _) -> ""
+  let string_of_ofs ofs = read_null_terminated_string {dst with offset = ref ofs} in
+  let print_block b =
+    let rec h s l = match l with
+      | [] -> s
+      | hd :: tl -> h (s ^ Printf.sprintf "%x " (int_of_char hd)) tl in
+    h "" b
+  in
+  match f with
+  (*DW_FORM_addr *)
+  | (`address, OFS_I32 (i)) -> Printf.sprintf "%s \t : 0x%lx\n" s i
+  | (`address, OFS_I64 (i)) ->  Printf.sprintf "%s \t : 0x%Lx\n" s i
+  (*DW_FORM_block1 *)
+  | (`block, Block1 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
+  (*DW_FORM_block2 *)
+  | (`block, Block2 (length, b)) -> Printf.sprintf "%s \t Block of length %d : %s\n" s length (print_block b)
+  (*DW_FORM_block4 *)
+  | (`block, Block4 (length, b)) -> Printf.sprintf "%s \t Block of length %ld : %s\n" s length (print_block b)
+  (*DW_FORM_block *)
+  | (`block, Block (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
+  (*DW_FORM_data1*)
+  | (`constant, Data1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
+  (*DW_FORM_data2 *)
+  | (`constant, Data2 h) -> Printf.sprintf "%s \t : %d\n" s h
+  (*DW_FORM_data4 *)
+  | (`constant, Data4 (w)) -> Printf.sprintf "%s \t : 0x%lx\n" s w;
+    (*DW_FORM_data8 *)
+  | (`constant, Data8 (dw)) -> Printf.sprintf "%s \t : %Lx\n" s dw;
+    (*DW_FORM_sdata *)
+  | (`constant, Sdata (sleb128)) -> Printf.sprintf "%s \t : %Lx\n" s sleb128
+  (*DW_FORM_udata *)
+  | (`constant, Udata (uleb128)) -> Printf.sprintf "%s \t : %Lx\n" s uleb128
+  (*DW_FORM_string *)
+  | (`string, String (ss)) -> Printf.sprintf "%s \t : %s\n" s ss
+  (*DW_FORM_strp*)
+  | (`string, OFS_I32 (i)) ->
+    Printf.sprintf "%s : (indirect string, offset: 0x%lx): %s\n" s i (string_of_ofs (Int64.to_int (Int64.of_int32 i)))
+  | (`string, OFS_I64 (i)) ->
+    Printf.sprintf "%s : (indirect string, offset: 0x%Lx): %s\n" s i (string_of_ofs (Int64.to_int i))
+  (*DW_FORM_flag*)
+  | (`flag, Flag f) -> let v = if f then "true" else "false" in Printf.sprintf "%s \t flag %s\n" s v
+  (*DW_FORM_flag_present *)
+  | (`flag, FlagPresent) -> Printf.sprintf "%s \t : 1\n" s
+  (*DW_FORM_ref1 *)
+  | (`reference, Ref1 c) -> Printf.sprintf "%s \t : %x\n" s (int_of_char c)
+  (*DW_FORM_ref2 *)
+  | (`reference, Ref2 h) -> Printf.sprintf "%s \t : %x\n" s h
+  (*DW_FORM_ref4 *)
+  | (`reference, Ref4 w) -> Printf.sprintf "%s \t : %lx\n" s w
+  (*DW_FORM_ref8 *)
+  | (`reference, Ref8 dw) -> Printf.sprintf "%s \t : %Lx\n" s dw
+  (*DW_FORM_ref_udata *)
+  | (`reference, Ref_udata uleb128)  -> Printf.sprintf "%s \t : %Lx\n" s uleb128
+  (*DW_FORM_ref_sig8 *)
+  (*DW_FORM_ref_addr *)
+  | (`reference, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
+  | (`reference, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
+  (*DW_FORM_indirect *)
+  | (`indirect, Udata uleb128) -> Printf.sprintf "%s \t %Lx\n" s uleb128
+  (*DW_FORM_sec_offset *)
+  | (`ptr, OFS_I32 i) -> Printf.sprintf "%s \t : %lx\n" s i
+  | (`ptr, OFS_I64 i) -> Printf.sprintf "%s \t : %Lx\n" s i
+  (*DW_FORM_exprloc *)
+  | (`exprloc, Exprloc (length, b)) -> Printf.sprintf "%s \t Block of length %Ld : %s\n" s length (print_block b)
+  | (_, _) -> ""
 
 let rec string_of_DIE d debug_str =
   let rec he l1 l2 s =
-      match l1, l2 with
-      | [], [] -> s
-      | (at, _)::tl1, (ofs, fv)::tl2 ->
-          he tl1 tl2 (s ^ (Printf.sprintf "    <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at) debug_str))
-      | _, _ -> s in
+    match l1, l2 with
+    | [], [] -> s
+    | (at, _)::tl1, (ofs, fv)::tl2 ->
+      he tl1 tl2 (s ^ (Printf.sprintf "    <%x>   " ofs) ^ (string_of_form_val fv (string_of_AT at) debug_str))
+    | _, _ -> s in
   begin
-  match d.die_cu_header with
-  Some(h) ->
+    match d.die_cu_header with
+      Some(h) ->
       begin
-      Printf.printf "  Compilation Unit @ offset 0x%x\n" d.die_ofs;
-      Printf.printf "   Length: \t  0x%Lx\n" h.unit_length;
-      Printf.printf "   Version: \t  %d\n" h.version;
-      Printf.printf "   Abbrev Offset: 0x%Lx\n" h.abbrev_offset;
-      Printf.printf "   Pointer Size:  %d\n" h.address_size;
-      Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth 0 d.abbrev_nu (string_of_TAG d.die_tag);
+        Printf.printf "  Compilation Unit @ offset 0x%x\n" d.die_ofs;
+        Printf.printf "   Length: \t  0x%Lx\n" h.unit_length;
+        Printf.printf "   Version: \t  %d\n" h.version;
+        Printf.printf "   Abbrev Offset: 0x%Lx\n" h.abbrev_offset;
+        Printf.printf "   Pointer Size:  %d\n" h.address_size;
+        Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth 0 d.abbrev_nu (string_of_TAG d.die_tag);
       end
-  | _ -> Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth d.die_ofs d.abbrev_nu (string_of_TAG d.die_tag);
+    | _ -> Printf.printf " <%d><%x>: Abbrev Number: %Lu (%s)\n" d.depth d.die_ofs d.abbrev_nu (string_of_TAG d.die_tag);
   end;
   Printf.printf "%s" (he d.die_attributes d.die_attribute_vals "")
 
@@ -589,78 +590,81 @@ let num_to_reg_x86_64 =
 
 let rec string_of_locs l base =
   let reg_names = match Arch.address_size with
-    4 -> num_to_reg_i386
-   | _ -> num_to_reg_x86_64 in
+      4 -> num_to_reg_i386
+    | _ -> num_to_reg_x86_64 in
   let rec print_expr_block blk res =
-      match blk with
-      | [] -> res
-      | l -> let (r, s) = (string_of_op l reg_names) in print_expr_block r (res ^ s ^ "; ") in
+    match blk with
+    | [] -> res
+    | l -> let (r, s) = (string_of_op l reg_names) in print_expr_block r (res ^ s ^ "; ") in
   let print_line loc =
     printf "    %08Lx " loc.entry_offset;
     let expr_str = print_expr_block loc.dwarf_location_description "" in
     match loc.start_offset, loc.end_offset with
-      | Ofs32 a, Ofs32 b -> printf "%08Lx %08Lx (%s)\n" (Int64.add (Int64.of_int32 a) base) (Int64.add (Int64.of_int32 b) base) expr_str
-      | Ofs64 a, Ofs64 b -> printf "%016Lx %016Lx (%s)\n" (Int64.add base a) (Int64.add base b) expr_str
-      | _, _ -> () in
+    | Ofs32 a, Ofs32 b -> printf "%08Lx %08Lx (%s)\n" (Int64.add (Int64.of_int32 a) base) (Int64.add (Int64.of_int32 b) base) expr_str
+    | Ofs64 a, Ofs64 b -> printf "%016Lx %016Lx (%s)\n" (Int64.add base a) (Int64.add base b) expr_str
+    | _, _ -> () in
   match l with
-    | [] -> ()
-    | [x] -> printf "    %08Lx <End of list>\n" x.entry_offset
-    | hd :: tl -> print_line hd; string_of_locs tl base
+  | [] -> ()
+  | [x] -> printf "    %08Lx <End of list>\n" x.entry_offset
+  | hd :: tl -> print_line hd; string_of_locs tl base
 
 let print_caml_locs l pvm =
   let print_info x tbl =
     let fst = List.hd x in
     let (spn, pvn, base, is_var) = try
         Hashtbl.find tbl fst.entry_offset
-    with Not_found -> ("", "", Int64.zero, false) in
+      with Not_found -> ("", "", Int64.zero, false) in
     printf "function : %s, %s : %s, base address : %Lx\n" spn (if is_var then "variable" else "parameter") pvn base in
 
   Hashtbl.iter (fun loc (spn, pvn, sppc, _) ->
-    printf "%s %s : %Lx with %Lx\n" spn pvn loc sppc
-  ) pvm;
+      printf "%s %s : %Lx with %Lx\n" spn pvn loc sppc
+    ) pvm;
 
   print_endline "\n    Offset   Begin\t\tEnd\t\tExpression";
   List.iter (fun (b,elt) ->
-    print_info elt pvm;
-    string_of_locs elt b) l;
+      print_info elt pvm;
+      string_of_locs elt b) l;
   print_endline ""
 
 let print_locs l =
   print_endline "    Offset   Begin\t\tEnd\t\tExpression";
   List.iter (fun elt ->
-    string_of_locs elt (Int64.zero)) l;
+      string_of_locs elt (Int64.zero)) l;
   print_endline ""
 
+(*TODO : Implement `objdump --dwarf=decodedline` style output*)
 let print_LNPs l =
   let rec h = function
-      | [] -> ()
-      | (hdr, lns) :: tl -> string_of_lineprog_header hdr; string_of_lineprg lns; h tl in
+    | [] -> ()
+    | (hdr, lns) :: tl -> string_of_lineprog_header hdr; string_of_lineprg lns; h tl in
   print_endline "Raw dump of debug contents of section .debug_line:\n";
   h l
 
 let print_abbrevs t =
   Hashtbl.iter (fun k v -> printf "abbrevs for offset 0x%x\n" k;
-                string_of_abbrev_section v;
-                printf "----------------------\n") t
+                 string_of_abbrev_section v;
+                 printf "----------------------\n") t
 
 let print_DIEs l ds =
   print_endline "Contents of the .debug_info section:";
   print_endline "";
   List.iter (fun t ->
       Zipper.fold_tree2 (fun x -> string_of_DIE x ds) (fun x ys -> ()) t
-  ) l
+    ) l
 
+(*TODO: should prob pass an anonymous function taking a DIE and
+ * returning a string instead*)
 let dump_CU_tree fname cu =
   let rec trav t =
     match t with
-      | Branch(x, []) -> [sprintf "    h_0x%x;\n" x.die_ofs]
-      | Branch(x, cs) ->
-          List.map
-          (fun c ->
-            match c with Branch(cc,_) ->
-            sprintf "    h_0x%x -> h_0x%x;\n" x.die_ofs cc.die_ofs
-          ) cs
-          @ List.concat @@ List.map trav cs in
+    | Branch(x, []) -> [sprintf "    h_0x%x;\n" x.die_ofs]
+    | Branch(x, cs) ->
+      List.map
+        (fun c ->
+           match c with Branch(cc,_) ->
+             sprintf "    h_0x%x -> h_0x%x;\n" x.die_ofs cc.die_ofs
+        ) cs
+      @ List.concat @@ List.map trav cs in
 
   let oc = open_out (fname ^ ".dot") in
   fprintf oc "digraph BST {\n";
