@@ -800,8 +800,8 @@ type elf_symbol = {
   }
 
   type program_desc =
-    | PT_INTERP of string
-    | PT_UNKNOWN
+    | PR_INTERP of string
+    | PR_UNKNOWN
 
   type program = {
     p_header : RAW.program_header;

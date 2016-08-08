@@ -728,8 +728,8 @@ module ABSTRACT = struct
     Printf.bprintf b "%s}" indent
 
   let program_desc e b indent = function
-    | PT_UNKNOWN -> Printf.bprintf b "PT_UNKNOWN"
-    | PT_INTERP s -> Printf.bprintf b "PT_INTERP %S" s
+    | PR_UNKNOWN -> Printf.bprintf b "PR_UNKNOWN"
+    | PR_INTERP s -> Printf.bprintf b "PR_INTERP %S" s
 
   let program e b indent pp =
     let indent2 = indent ^ "  " in
@@ -782,4 +782,3 @@ let to_ocaml indent e =
   Buffer.contents b
 
 end
-

@@ -890,9 +890,9 @@ module ABSTRACT = struct
         let p_desc =
           match ph.R.p_type with
           | PT_INTERP ->
-            PT_INTERP (get_string0 c 0)
+            PR_INTERP (get_string0 c 0)
           | _ ->
-            PT_UNKNOWN
+            PR_UNKNOWN
         in
         { p_header = ph; p_desc }
       ) r.R.elf_programs;

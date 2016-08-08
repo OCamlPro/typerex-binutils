@@ -355,7 +355,7 @@ let _ =
 
         let b = Buffer.create 100 in
         Printf.bprintf b "(*\n  | [";
-        List.iteri (fun i tok ->
+        OcpList.iteri (fun i tok ->
           Printf.bprintf b " %s;" (pattern_of_token i tok)
         ) line;
         Printf.bprintf b " ] -> \n*)\n";
@@ -463,4 +463,3 @@ let _ =
     output_string oc (Buffer.contents b);
   ) all_ins;
   close_out oc
-
