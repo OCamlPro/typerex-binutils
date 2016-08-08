@@ -1,0 +1,2 @@
+DA /5 FISUBR m32int Valid Valid : Subtract ST(0) from m32int and store result in ST(0).
+DE /5 FISUBR m16int Valid Valid : Subtract ST(0) from m16int and store result in ST(0).

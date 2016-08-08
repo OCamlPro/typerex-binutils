@@ -1,0 +1,19 @@
+90+rw XCHG AX, r16 O Valid Valid : Exchange r16 with AX.
+90+rw XCHG r16, AX O Valid Valid : Exchange AX with r16.
+90+rd XCHG EAX, r32 O Valid Valid : Exchange r32 with EAX.
+REX.W + 90+rd XCHG RAX, r64 O Valid N.E. : Exchange r64 with RAX.
+90+rd XCHG r32, EAX O Valid Valid : Exchange EAX with r32.
+REX.W + 90+rd XCHG r64, RAX O Valid N.E. : Exchange RAX with r64.
+86 /r XCHG r/m8, r8 MR Valid Valid : Exchange r8 (byte register) with byte from r/m8.
+# REX + 86 /r XCHG r/m8*, r8* MR Valid N.E. : Exchange r8 (byte register) with byte from r/m8.
+86 /r XCHG r8, r/m8 RM Valid Valid : Exchange byte from r/m8 with r8 (byte register).
+# REX + 86 /r XCHG r8*, r/m8* RM Valid N.E. : Exchange byte from r/m8 with r8 (byte register).
+87 /r XCHG r/m16, r16 MR Valid Valid : Exchange r16 with word from r/m16.
+87 /r XCHG r16, r/m16 RM Valid Valid : Exchange word from r/m16 with r16.
+87 /r XCHG r/m32, r32 MR Valid Valid : Exchange r32 with doubleword from r/m32.
+REX.W + 87 /r XCHG r/m64, r64 MR Valid N.E. : Exchange r64 with quadword from r/m64.
+87 /r XCHG r32, r/m32 RM Valid Valid : Exchange doubleword from r/m32 with r32.
+REX.W + 87 /r XCHG r64, r/m64 RM Valid N.E. : Exchange quadword from r/m64 with r64.
+
+# NOTES:
+# * In 64-bit mode, r/m8 can not be encoded to access the following byte registers if a REX prefix is used: AH, BH, CH, DH.

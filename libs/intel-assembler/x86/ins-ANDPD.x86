@@ -1,0 +1,1 @@
+66 0F 54 /r ANDPD xmm1, xmm2/m128 RM V/V SSE2 : Return the bitwise logical AND of packed double-precision floating-point values in xmm1 and xmm2/m128.

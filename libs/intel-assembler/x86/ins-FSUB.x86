@@ -1,0 +1,6 @@
+D8 /4 FSUB m32fp Valid Valid
+DC /4 FSUB m64fp Valid Valid
+D8 E0+i FSUB ST(0), ST(i) Valid Valid
+DC E8+i FSUB ST(i), ST(0) Valid Valid
+DE E8+i FSUBP ST(i), ST(0) Valid Valid
+DE E9 FSUBP Valid Valid

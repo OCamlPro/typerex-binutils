@@ -1,0 +1,5 @@
+D9 /0 FLD m32fp Valid Valid
+DD /0 FLD m64fp Valid Valid
+DB /5 FLD m80fp Valid Valid
+D9 C0+i FLD ST(i) Valid Valid
+

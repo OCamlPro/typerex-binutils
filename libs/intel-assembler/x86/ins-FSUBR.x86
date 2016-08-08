@@ -1,0 +1,4 @@
+D8 /5 FSUBR m32fp Valid Valid : Subtract ST(0) from m32fp and store result in ST(0).
+DC /5 FSUBR m64fp Valid Valid : Subtract ST(0) from m64fp and store result in ST(0).
+D8 E8+i FSUBR ST(0), ST(i) Valid Valid : Subtract ST(0) from ST(i) and store result in ST(0).
+DC E0+i FSUBR ST(i), ST(0) Valid Valid : Subtract ST(i) from ST(0) and store result in ST(i).

@@ -1,0 +1,3 @@
+# Seems to be a * for 32 bit compatibility mode
+0F C8+rd BSWAP r32 O Valid Valid : Reverses the byte order of a 32-bit register.
+REX.W + 0F C8+rd BSWAP r64 O Valid N.E. : Reverses the byte order of a 64-bit register.

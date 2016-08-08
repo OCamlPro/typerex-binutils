@@ -1,0 +1,2 @@
+F2 0F 2A /r CVTSI2SD xmm, r/m32 RM V/V SSE2 : Convert one signed doubleword integer from r/m32 to one double-precision floating-point value in xmm.
+F2 REX.W 0F 2A /r CVTSI2SD xmm, r/m64 RM V/N.E. SSE2 : Convert one signed quadword integer from r/m64 to one double-precision floating-point value in xmm.

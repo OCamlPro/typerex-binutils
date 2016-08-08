@@ -1,0 +1,42 @@
+
+begin program "ocp-x86-gen"
+  files = [
+    "x86genLexer.mll"
+    "x86genMain.ml"
+  ]
+   requires = [ "ocplib-lang" "ocplib-system" ]
+end
+
+(*
+begin library "ocp-intel"
+  files = [
+    "intel_proc.ml"
+    "intel_more.mli" (* only an interface to test the generated code *)
+  ]
+  requires = [ "compiler-libs" ]
+end
+*)
+(**************************************************************************)
+(*                                                                        *)
+(*  Copyright 2012 OCamlPro                                               *)
+(*                                                                        *)
+(*  All rights reserved.  This file is distributed under the terms of     *)
+(*  the GNU Public License version 3.0.                                   *)
+(*                                                                        *)
+(*  TypeRex is distributed in the hope that it will be useful,            *)
+(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
+(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
+(*  GNU General Public License for more details.                          *)
+(*                                                                        *)
+(**************************************************************************)
+
+begin library "ocplib-intelasm"
+  files = [
+  "intelasmTypes.ml"
+  "intelasmEmit.ml"
+  "intelasmAssembler.ml"
+  "intelasmPrinter.ml"
+ ]
+
+  requires = [ "ocplib-coff" "ocplib-binobj" "ocplib-old-endian" ]
+end

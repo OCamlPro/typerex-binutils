@@ -1,0 +1,1 @@
+66 0F 2E /r UCOMISD xmm1, xmm2/m64 RM V/V SSE2 : Compares (unordered) the low double-precision floating-point values in xmm1 and xmm2/m64 and set the EFLAGS accordingly.

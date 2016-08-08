@@ -1,0 +1,1 @@
+66 0F 57 /r XORPD xmm1, xmm2/m128 RM V/V SSE2 : Bitwise exclusive-OR of xmm2/m128 and xmm1.

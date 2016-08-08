@@ -1,0 +1,2 @@
+DE E0+i FSUBRP ST(i), ST(0) Valid Valid : Subtract ST(i) from ST(0), store result in ST(i), and pop register stack.
+DE E1 FSUBRP Valid Valid : Subtract ST(1) from ST(0), store result in ST(1), and pop register stack.
