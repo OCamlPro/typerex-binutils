@@ -16,5 +16,5 @@ autoconf/ocaml-config.h.in 361f7d5a23b30c6c49756a9e34c2dcf9
 build.ocp 4f02c2f6cf1c5b1a3733e483151d5eb4
 configure 3ffc5da4b7c00140c3024342e64cc2a5
 ocp-autoconf.ac bb8a88addef00eed10bfc70827998e9e
-opam b6b60d554c5bdf97df4ba2eb8acba9b6
+opam c5e916e1bfb97668ddfc7b404f41ae04
 push-opam.sh 5402a44ed6301359159486da51a67d75

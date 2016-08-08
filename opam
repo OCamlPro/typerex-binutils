@@ -26,10 +26,23 @@ build: [
 install: [
   [ make "install" ]
 ]
-remove: [
-]
 depends: [
      "ocamlfind"
      "ocp-build" {>= "1.99.17-beta" }
 ]
 available: [ocaml-version >= "3.12.0"]
+
+(**************************************************************)
+(*                                                            *)
+(* From opam.trailer:                                         *)
+(*                                                            *)
+(**************************************************************)
+
+remove: [
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-x86-gen" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-elf" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-dwarf" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-elf" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-old-endian" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-perffile" ]
+]
