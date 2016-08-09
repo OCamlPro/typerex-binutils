@@ -1,4 +1,5 @@
 (*From Practical OCaml*)
+open StringCompat
 
 let make_printable i_char =
   match i_char with
@@ -16,9 +17,9 @@ let conditional_add_st bffr ch =
 
 let string_map str fnc =
   let rec strmap st acc =
-    match st with
+    match (Bytes.to_string st) with
     | "" -> List.rev acc
-    | _ -> strmap (String.sub st 1 ((String.length st) - 1)) ((fnc st.[0]) :: acc)
+    | _ -> strmap (Bytes.sub st 1 ((Bytes.length st) - 1)) (fnc (Bytes.get st 0) :: acc)
   in strmap str []
 
 let rec output_lines s f_buf s_buf curpos len =
@@ -29,9 +30,9 @@ let rec output_lines s f_buf s_buf curpos len =
     (
       if (res < 16) then
         (List.iter (conditional_add_st f_buf)
-           (string_map (String.sub str_buf 0 res) make_hex);
+           (string_map (Bytes.sub str_buf 0 res) make_hex);
          List.iter (Buffer.add_char s_buf)
-           (string_map (String.sub str_buf 0 res ) make_printable))
+           (string_map (Bytes.sub str_buf 0 res ) make_printable))
       else
         (List.iter (conditional_add_st f_buf) (string_map str_buf make_hex);
          List.iter (Buffer.add_char s_buf) (string_map str_buf make_printable))

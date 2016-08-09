@@ -23,6 +23,7 @@ end
 
 begin library "ocplib-xxd"
   files = [ "xxd.ml" ]
+  requires = string_compat
 end
 
 begin program "ocp-dwarf"
