@@ -13,6 +13,20 @@
 (**************************************************************************)
 
 begin library "ocplib-dwarf"
-  files = [ "dwarfTypes.ml" "dwarfReader.ml" "dwarfPrinter.ml" ]
-  requires = [ "ocplib-elf" ]
+  files = [ "zipper.ml" "arch.ml" "dwarfUtils.ml" "form_data.ml"
+            "class.ml" "dwarfFormat.ml" "form.ml"
+            "dwarfTypes.ml" "dwarfDIE.ml"
+            "dwarfLNP.ml" "dwarfLocs.ml" "dwarfAbbrev.ml"
+            "dwarfReader.ml" "dwarfPrinter.ml" ]
+  requires = [ "ocplib-elf" "ocplib-endian" ]
+end
+
+begin library "ocplib-xxd"
+  files = [ "xxd.ml" ]
+  requires = string_compat
+end
+
+begin program "ocp-dwarf"
+  files = [ "main_driver.ml"  ]
+  requires = [ "ocplib-dwarf" "ocplib-xxd" "str" ]
 end

@@ -12,7 +12,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open DwarfTypes
-open DwarfPrinter
+let read_abbrev_section = DwarfAbbrev.read_abbrev_section
 
-let read s = ()
+let read_CUs = DwarfDIE.readAllDIE
+
+let read_header_and_lnp_stmts = DwarfLNP.readLNPs
+
+let read_all_locs = DwarfLocs.read_all_locs
+
+let read_caml_locs = DwarfLocs.read_caml_locs

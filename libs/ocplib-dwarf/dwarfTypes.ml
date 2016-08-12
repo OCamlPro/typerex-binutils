@@ -42,25 +42,6 @@ end
 
 module Int64 = Int64
 
-(* Section 7.21 - Line Number Information *)
-type dwarf_line_number_information =
-    DW_LNI_special of Word64.t * Int64.t
-  | DW_LNS_copy
-  | DW_LNS_advance_pc of Word64.t
-  | DW_LNS_advance_line of Int64.t
-  | DW_LNS_set_file of Word64.t
-  | DW_LNS_set_column of Word64.t
-  | DW_LNS_negate_stmt
-  | DW_LNS_set_basic_block
-  | DW_LNS_const_add_pc of Word64.t
-  | DW_LNS_fixed_advance_pc of Word64.t
-  | DW_LNS_set_prologue_end
-  | DW_LNS_set_epilogue_begin
-  | DW_LNS_set_isa of Word64.t
-  | DW_LNE_end_sequence
-  | DW_LNE_set_address of Word64.t
-  | DW_LNE_define_file of string * Word64.t * Word64.t * Word64.t
-
 type dwarf_TAG =
     DW_TAG_array_type
   | DW_TAG_class_type
@@ -119,6 +100,7 @@ type dwarf_TAG =
   | DW_TAG_imported_unit
   | DW_TAG_condition
   | DW_TAG_shared_type
+  | DW_TAG_user of Word64.t          (*   user extension *)
 
 type dwarf_AT  =
     DW_AT_sibling              (*   reference *)
@@ -207,84 +189,22 @@ type dwarf_AT  =
   | DW_AT_elemental            (*   flag *)
   | DW_AT_pure                 (*   flag *)
   | DW_AT_recursive            (*   flag *)
+  | DW_AT_signature            (*   reference *)
+  | DW_AT_main_subprogram      (*   flag *)
+  | DW_AT_data_bit_offset      (*   constant *)
+  | DW_AT_const_expr           (*   flag *)
+  | DW_AT_enum_class           (*   flag *)
+  | DW_AT_linkage_name         (*   string *)
   | DW_AT_user of Word64.t          (*   user extension *)
-
-type dwarf_FORM =
-    DW_FORM_addr              (*   address *)
-  | DW_FORM_block2 (*   block *)
-  | DW_FORM_block4 (*   block *)
-  | DW_FORM_data2 (*   constant *)
-  | DW_FORM_data4 (*   constant, lineptr, loclistptr, macptr, rangelistptr *)
-  | DW_FORM_data8 (*   constant, lineptr, loclistptr, macptr, rangelistptr *)
-  | DW_FORM_string (*   string *)
-  | DW_FORM_block (*   block *)
-  | DW_FORM_block1 (*   block *)
-  | DW_FORM_data1 (*   constant *)
-  | DW_FORM_flag (*   flag *)
-  | DW_FORM_sdata (*   constant *)
-  | DW_FORM_strp (*   string *)
-  | DW_FORM_udata (*   constant *)
-  | DW_FORM_ref_addr            (*   reference *)
-  | DW_FORM_ref1                (*   reference *)
-  | DW_FORM_ref2                (*   reference *)
-  | DW_FORM_ref4                (*   reference *)
-  | DW_FORM_ref8                (*   reference *)
-  | DW_FORM_ref_udata           (*   reference *)
-  | DW_FORM_indirect            (*   (see Section 7.5.3 of DWARF3 specification) *)
-
-type dwarf_ATVAL =
-    DW_ATVAL_INT of Int64.t
-      | DW_ATVAL_UINT of Word64.t
-      | DW_ATVAL_STRING of string
-      | DW_ATVAL_BLOB of string
-      | DW_ATVAL_BOOL  of bool
-
-type dwarf_abbreviation =
-    { abbrev_num : Word64.t;
-      abbrev_tag : dwarf_TAG;
-      abbrev_has_children : bool;
-      abbrev_attributes : (dwarf_AT * dwarf_FORM) list;
-    }
-
-type dward_DIE =
-    { die_id : Word64.t; (* Unique identifier for this entry. *)
-      (* Unique identifier of this entry's parent. *)
-      die_parent : Word64.t option;
-      (* Unique identifiers of this entry's children. *)
-      die_children : Word64.t list;
-      (* Unique identifier of the left sibling in the DIE tree,
-         if one exists. *)
-      die_sibling_left  : Word64.t option;
-      (* Unique identifier of the right sibling in the DIE tree,
-         if one exists. *)
-      die_sibling_right : Word64.t option;
-      (* Type tag. *)
-      die_tag          : dwarf_TAG;
-      (* Attribute tag and value pairs. *)
-      die_attributes   : (dwarf_AT * dwarf_ATVAL) list;
-    }
-
-type dwarf_line_number_expression =
-    { lnm_address       : Word64.t;
-      lnm_file          : Word64.t;
-      lnm_line          : Word64.t;
-      lnm_column        : Word64.t;
-      lnm_statement     : bool;
-      lnm_basicblock    : bool;
-      lnm_end_sequence   : bool;
-      lnm_prologue_end   : bool;
-      lnm_epilogue_begin : bool;
-      lnm_ISA           : Word64.t;
-      lnm_files         : (string * Word64.t * Word64.t * Word64.t) list;
-    }
+  | DW_AT_unk of Word64.t
 
 (*  Section 7.21 - Macro Information *)
 type dwarf_MACINFO =
     DW_MACINFO_define of Word64.t * string     (*  Line number and defined symbol with definition *)
-    | DW_MACINFO_undef of  Word64.t * string      (*  Line number and undefined symbol *)
-    | DW_MACINFO_start_file of Word64.t * Word64.t (*  Marks start of file with the line where the file was included from and a source file index *)
-    | DW_MACINFO_end_file                 (*  Marks end of file *)
-    | DW_MACINFO_vendor_ext of Word64.t *  string (*  Implementation defined *)
+  | DW_MACINFO_undef of  Word64.t * string      (*  Line number and undefined symbol *)
+  | DW_MACINFO_start_file of Word64.t * Word64.t (*  Marks start of file with the line where the file was included from and a source file index *)
+  | DW_MACINFO_end_file                 (*  Marks end of file *)
+  | DW_MACINFO_vendor_ext of Word64.t *  string (*  Implementation defined *)
 
 type dwarf_CFA =
   | DW_CFA_advance_loc of Word8.t
@@ -315,179 +235,23 @@ type dwarf_CFA =
   | DW_CFA_val_expression of Word64.t * string
 
 type dwarf_CIE =
-    { cie_augmentation : string;
-      cie_codealignmentfactor : Word64.t;
-      cie_dataalignmentfactor   : Int64.t;
-      cie_returnaddressregister : Word64.t;
-      cie_initialinstructions   : dwarf_CFA list;
-    }
+  { cie_augmentation : string;
+    cie_codealignmentfactor : Word64.t;
+    cie_dataalignmentfactor   : Int64.t;
+    cie_returnaddressregister : Word64.t;
+    cie_initialinstructions   : dwarf_CFA list;
+  }
 
 type dwarf_FDE =
-    { fde_ciepointer : Word64.t;
-      fde_InitialLocation : Word64.t;
-      fde_AddressRange    : Word64.t;
-      fde_Instructions    : dwarf_CFA list;
-    }
+  { fde_ciepointer : Word64.t;
+    fde_InitialLocation : Word64.t;
+    fde_AddressRange    : Word64.t;
+    fde_Instructions    : dwarf_CFA list;
+  }
 
 type dwarf_CIEFDE =
     DW_CIE of dwarf_CIE
   | DW_FDE of dwarf_FDE
-
-
-
-type dwarf_OP =
-    DW_OP_addr of Word64.t
-  | DW_OP_deref
-  | DW_OP_const1u of Word8.t
-  | DW_OP_const1s of Int8.t
-  | DW_OP_const2u of Word16.t
-  | DW_OP_const2s of Int16.t
-  | DW_OP_const4u of Word32.t
-  | DW_OP_const4s of Int32.t
-  | DW_OP_const8u of Word64.t
-  | DW_OP_const8s of Int64.t
-  | DW_OP_constu  of Word64.t
-  | DW_OP_consts  of Int64.t
-  | DW_OP_dup
-  | DW_OP_drop
-  | DW_OP_over
-  | DW_OP_pick of Word8.t
-  | DW_OP_swap
-  | DW_OP_rot
-  | DW_OP_xderef
-  | DW_OP_abs
-  | DW_OP_and
-  | DW_OP_div
-  | DW_OP_minus
-  | DW_OP_mod
-  | DW_OP_mul
-  | DW_OP_neg
-  | DW_OP_not
-  | DW_OP_or
-  | DW_OP_plus
-  | DW_OP_plus_uconst of Word64.t
-  | DW_OP_shl
-  | DW_OP_shr
-  | DW_OP_shra
-  | DW_OP_xor
-  | DW_OP_skip of Int16.t
-  | DW_OP_bra of Int16.t
-  | DW_OP_eq
-  | DW_OP_ge
-  | DW_OP_gt
-  | DW_OP_le
-  | DW_OP_lt
-  | DW_OP_ne
-  | DW_OP_lit0
-  | DW_OP_lit1
-  | DW_OP_lit2
-  | DW_OP_lit3
-  | DW_OP_lit4
-  | DW_OP_lit5
-  | DW_OP_lit6
-  | DW_OP_lit7
-  | DW_OP_lit8
-  | DW_OP_lit9
-  | DW_OP_lit10
-  | DW_OP_lit11
-  | DW_OP_lit12
-  | DW_OP_lit13
-  | DW_OP_lit14
-  | DW_OP_lit15
-  | DW_OP_lit16
-  | DW_OP_lit17
-  | DW_OP_lit18
-  | DW_OP_lit19
-  | DW_OP_lit20
-  | DW_OP_lit21
-  | DW_OP_lit22
-  | DW_OP_lit23
-  | DW_OP_lit24
-  | DW_OP_lit25
-  | DW_OP_lit26
-  | DW_OP_lit27
-  | DW_OP_lit28
-  | DW_OP_lit29
-  | DW_OP_lit30
-  | DW_OP_lit31
-  | DW_OP_reg0
-  | DW_OP_reg1
-  | DW_OP_reg2
-  | DW_OP_reg3
-  | DW_OP_reg4
-  | DW_OP_reg5
-  | DW_OP_reg6
-  | DW_OP_reg7
-  | DW_OP_reg8
-  | DW_OP_reg9
-  | DW_OP_reg10
-  | DW_OP_reg11
-  | DW_OP_reg12
-  | DW_OP_reg13
-  | DW_OP_reg14
-  | DW_OP_reg15
-  | DW_OP_reg16
-  | DW_OP_reg17
-  | DW_OP_reg18
-  | DW_OP_reg19
-  | DW_OP_reg20
-  | DW_OP_reg21
-  | DW_OP_reg22
-  | DW_OP_reg23
-  | DW_OP_reg24
-  | DW_OP_reg25
-  | DW_OP_reg26
-  | DW_OP_reg27
-  | DW_OP_reg28
-  | DW_OP_reg29
-  | DW_OP_reg30
-  | DW_OP_reg31
-  | DW_OP_breg0 of Int64.t
-  | DW_OP_breg1 of Int64.t
-  | DW_OP_breg2 of Int64.t
-  | DW_OP_breg3 of Int64.t
-  | DW_OP_breg4 of Int64.t
-  | DW_OP_breg5 of Int64.t
-  | DW_OP_breg6 of Int64.t
-  | DW_OP_breg7 of Int64.t
-  | DW_OP_breg8 of Int64.t
-  | DW_OP_breg9 of Int64.t
-  | DW_OP_breg10 of Int64.t
-  | DW_OP_breg11 of Int64.t
-  | DW_OP_breg12 of Int64.t
-  | DW_OP_breg13 of Int64.t
-  | DW_OP_breg14 of Int64.t
-  | DW_OP_breg15 of Int64.t
-  | DW_OP_breg16 of Int64.t
-  | DW_OP_breg17 of Int64.t
-  | DW_OP_breg18 of Int64.t
-  | DW_OP_breg19 of Int64.t
-  | DW_OP_breg20 of Int64.t
-  | DW_OP_breg21 of Int64.t
-  | DW_OP_breg22 of Int64.t
-  | DW_OP_breg23 of Int64.t
-  | DW_OP_breg24 of Int64.t
-  | DW_OP_breg25 of Int64.t
-  | DW_OP_breg26 of Int64.t
-  | DW_OP_breg27 of Int64.t
-  | DW_OP_breg28 of Int64.t
-  | DW_OP_breg29 of Int64.t
-  | DW_OP_breg30 of Int64.t
-  | DW_OP_breg31 of Int64.t
-  | DW_OP_regx of Word64.t
-  | DW_OP_fbreg of Int64.t
-  | DW_OP_bregx of Word64.t * Int64.t
-  | DW_OP_piece of Word64.t
-  | DW_OP_deref_size of Word8.t
-  | DW_OP_xderef_size of Word8.t
-  | DW_OP_nop
-  | DW_OP_push_object_address
-  | DW_OP_call2 of Word16.t
-  | DW_OP_call4 of Word32.t
-  | DW_OP_call_ref of Word64.t
-  | DW_OP_form_tls_address
-  | DW_OP_call_frame_cfa
-  | DW_OP_bit_piece of Word64.t * Word64.t
 
 type dwarf_ATE =
     DW_ATE_address
@@ -579,26 +343,6 @@ type dwarf_DSC =
     DW_DSC_label
   | DW_DSC_range
 
-type t = ()
-
-
-
-
-
-let default_LNE is_stmt =
-  { lnm_address       = 0L;
-    lnm_file          = 1L;
-    lnm_line          = 1L;
-    lnm_column        = 0L;
-    lnm_statement     = is_stmt;
-    lnm_basicblock    = false;
-    lnm_end_sequence   = false;
-    lnm_prologue_end   = false;
-    lnm_epilogue_begin = false;
-    lnm_ISA           = 0L;
-    lnm_files         = [];
-  }
-
 let dw_ate = function
   | 0x01 -> DW_ATE_address
   | 0x02 -> DW_ATE_boolean
@@ -616,7 +360,6 @@ let dw_ate = function
   | 0x0e -> DW_ATE_unsigned_fixed
   | 0x0f -> DW_ATE_decimal_float
   | n -> Printf.kprintf failwith "unknown DW_ATE %x" n
-
 
 let dw_ds = function
   | 0x01 -> DW_DS_unsigned
@@ -701,3 +444,172 @@ let dw_dsc = function
   | 0x00 -> DW_DSC_label
   | 0x01 -> DW_DSC_range
   | n -> Printf.kprintf failwith "unknown DW_DSC %x" n
+
+let dw_tag =
+  let dw_tag_lo_user = 0x4080 in
+  let dw_tag_hi_user = 0xffff in
+  function
+  | 0x01 -> DW_TAG_array_type
+  | 0x02 -> DW_TAG_class_type
+  | 0x03 -> DW_TAG_entry_point
+  | 0x04 -> DW_TAG_enumeration_type
+  | 0x05 -> DW_TAG_formal_parameter
+  | 0x08 -> DW_TAG_imported_declaration
+  | 0x0a -> DW_TAG_label
+  | 0x0b -> DW_TAG_lexical_block
+  | 0x0d -> DW_TAG_member
+  | 0x0f -> DW_TAG_pointer_type
+  | 0x10 -> DW_TAG_reference_type
+  | 0x11 -> DW_TAG_compile_unit
+  | 0x12 -> DW_TAG_string_type
+  | 0x13 -> DW_TAG_structure_type
+  | 0x15 -> DW_TAG_subroutine_type
+  | 0x16 -> DW_TAG_typedef
+  | 0x17 -> DW_TAG_union_type
+  | 0x18 -> DW_TAG_unspecified_parameters
+  | 0x19 -> DW_TAG_variant
+  | 0x1a -> DW_TAG_common_block
+  | 0x1b -> DW_TAG_common_inclusion
+  | 0x1c -> DW_TAG_inheritance
+  | 0x1d -> DW_TAG_inlined_subroutine
+  | 0x1e -> DW_TAG_module
+  | 0x1f -> DW_TAG_ptr_to_member_type
+  | 0x20 -> DW_TAG_set_type
+  | 0x21 -> DW_TAG_subrange_type
+  | 0x22 -> DW_TAG_with_stmt
+  | 0x23 -> DW_TAG_access_declaration
+  | 0x24 -> DW_TAG_base_type
+  | 0x25 -> DW_TAG_catch_block
+  | 0x26 -> DW_TAG_const_type
+  | 0x27 -> DW_TAG_constant
+  | 0x28 -> DW_TAG_enumerator
+  | 0x29 -> DW_TAG_file_type
+  | 0x2a -> DW_TAG_friend
+  | 0x2b -> DW_TAG_namelist
+  | 0x2c -> DW_TAG_namelist_item
+  | 0x2d -> DW_TAG_packed_type
+  | 0x2e -> DW_TAG_subprogram
+  | 0x2f -> DW_TAG_template_type_parameter
+  | 0x30 -> DW_TAG_template_value_parameter
+  | 0x31 -> DW_TAG_thrown_type
+  | 0x32 -> DW_TAG_try_block
+  | 0x33 -> DW_TAG_variant_part
+  | 0x34 -> DW_TAG_variable
+  | 0x35 -> DW_TAG_volatile_type
+  | 0x36 -> DW_TAG_dwarf_procedure
+  | 0x37 -> DW_TAG_restrict_type
+  | 0x38 -> DW_TAG_interface_type
+  | 0x39 -> DW_TAG_namespace
+  | 0x3a -> DW_TAG_imported_module
+  | 0x3b -> DW_TAG_unspecified_type
+  | 0x3c -> DW_TAG_partial_unit
+  | 0x3d -> DW_TAG_imported_unit
+  | 0x3f -> DW_TAG_condition
+  | 0x40 -> DW_TAG_shared_type
+  | n ->
+    if n >= dw_tag_lo_user && n <= dw_tag_hi_user then
+      DW_TAG_user (Int64.of_int n)
+    else
+      Printf.kprintf failwith "unknown DW_TAG %x" n
+
+let dw_at =
+  let dw_at_lo_user = 0x2000 in
+  let dw_at_hi_user = 0x3fff in
+  function
+    0x01 -> DW_AT_sibling
+  | 0x02 -> DW_AT_location
+  | 0x03 -> DW_AT_name
+  | 0x09 -> DW_AT_ordering
+  | 0x0b -> DW_AT_byte_size
+  | 0x0c -> DW_AT_bit_offset
+  | 0x0d -> DW_AT_bit_size
+  | 0x10 -> DW_AT_stmt_list
+  | 0x11 -> DW_AT_low_pc
+  | 0x12 -> DW_AT_high_pc
+  | 0x13 -> DW_AT_language
+  | 0x15 -> DW_AT_discr
+  | 0x16 -> DW_AT_discr_value
+  | 0x17 -> DW_AT_visibility
+  | 0x18 -> DW_AT_import
+  | 0x19 -> DW_AT_string_length
+  | 0x1a -> DW_AT_common_reference
+  | 0x1b -> DW_AT_comp_dir
+  | 0x1c -> DW_AT_const_value
+  | 0x1d -> DW_AT_containing_type
+  | 0x1e -> DW_AT_default_value
+  | 0x20 -> DW_AT_inline
+  | 0x21 -> DW_AT_is_optional
+  | 0x22 -> DW_AT_lower_bound
+  | 0x25 -> DW_AT_producer
+  | 0x27 -> DW_AT_prototyped
+  | 0x2a -> DW_AT_return_addr
+  | 0x2c -> DW_AT_start_scope
+  | 0x2e -> DW_AT_bit_stride
+  | 0x2f -> DW_AT_upper_bound
+  | 0x31 -> DW_AT_abstract_origin
+  | 0x32 -> DW_AT_accessibility
+  | 0x33 -> DW_AT_address_class
+  | 0x34 -> DW_AT_artificial
+  | 0x35 -> DW_AT_base_types
+  | 0x36 -> DW_AT_calling_convention
+  | 0x37 -> DW_AT_count
+  | 0x38 -> DW_AT_data_member_location
+  | 0x39 -> DW_AT_decl_column
+  | 0x3a -> DW_AT_decl_file
+  | 0x3b -> DW_AT_decl_line
+  | 0x3c -> DW_AT_declaration
+  | 0x3d -> DW_AT_discr_list
+  | 0x3e -> DW_AT_encoding
+  | 0x3f -> DW_AT_external
+  | 0x40 -> DW_AT_frame_base
+  | 0x41 -> DW_AT_friend
+  | 0x42 -> DW_AT_identifier_case
+  | 0x43 -> DW_AT_macro_info
+  | 0x44 -> DW_AT_namelist_item
+  | 0x45 -> DW_AT_priority
+  | 0x46 -> DW_AT_segment
+  | 0x47 -> DW_AT_specification
+  | 0x48 -> DW_AT_static_link
+  | 0x49 -> DW_AT_type
+  | 0x4a -> DW_AT_use_location
+  | 0x4b -> DW_AT_variable_parameter
+  | 0x4c -> DW_AT_virtuality
+  | 0x4d -> DW_AT_vtable_elem_location
+  | 0x4e -> DW_AT_allocated
+  | 0x4f -> DW_AT_associated
+  | 0x50 -> DW_AT_data_location
+  | 0x51 -> DW_AT_byte_stride
+  | 0x52 -> DW_AT_entry_pc
+  | 0x53 -> DW_AT_use_UTF8
+  | 0x54 -> DW_AT_extension
+  | 0x55 -> DW_AT_ranges
+  | 0x56 -> DW_AT_trampoline
+  | 0x67 -> DW_AT_call_column
+  | 0x58 -> DW_AT_call_file
+  | 0x59 -> DW_AT_call_line
+  | 0x5a -> DW_AT_description
+  | 0x5b -> DW_AT_binary_scale
+  | 0x5c -> DW_AT_decimal_scale
+  | 0x5d -> DW_AT_small
+  | 0x5e -> DW_AT_decimal_sign
+  | 0x5f -> DW_AT_digit_count
+  | 0x60 -> DW_AT_picture_string
+  | 0x61 -> DW_AT_mutable
+  | 0x62 -> DW_AT_threads_scaled
+  | 0x63 -> DW_AT_explicit
+  | 0x64 -> DW_AT_object_pointer
+  | 0x65 -> DW_AT_endianity
+  | 0x66 -> DW_AT_elemental
+  | 0x68 -> DW_AT_recursive
+  | 0x69 -> DW_AT_signature
+  | 0x6a -> DW_AT_main_subprogram
+  | 0x6b -> DW_AT_data_bit_offset
+  | 0x6c -> DW_AT_const_expr
+  | 0x6d -> DW_AT_enum_class
+  | 0x6e -> DW_AT_linkage_name
+  | n ->
+    if n >= dw_at_lo_user && n <= dw_at_hi_user then
+      DW_AT_user (Int64.of_int n)
+    else
+      DW_AT_unk (Int64.of_int n)
+
