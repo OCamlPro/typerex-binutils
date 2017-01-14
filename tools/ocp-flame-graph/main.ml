@@ -68,9 +68,9 @@ let () =
     "--output", Arg.String (fun s -> output := Some s),
       "OUTPUT.svg Output SVG to this file (-- is stdout)";
 
-    "--max-depth", Arg.Int (fun n -> config.max_depth <- n),
+    "--max-depth", Arg.Int (fun n -> config.FlameGraph.max_depth <- n),
       Printf.sprintf "MAX_DEPTH max depth of flame graph (default %d)"
-        config.max_depth;
+        config.FlameGraph.max_depth;
   ] in
   let arg_usage = String.concat "\n" [
     "ocp-flame-graph [OPTIONS] [FOLDED FILES]: Flame Graph Generator";
