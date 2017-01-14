@@ -8,7 +8,7 @@ type tree = {
 
 type bts = (string list * float) list
 
-let new_node name =
+let new_tree name =
   {
     node_title = name;
     node_width = 0.;
@@ -17,24 +17,41 @@ let new_node name =
 
 let set_title node title = node.node_title <- title
 
+let rec enter_bt node stack count =
+  node.node_width <- node.node_width +. count;
+  match stack with
+  | [] -> ()
+  | head :: tail ->
+    let node =
+      try
+        StringMap.find head node.node_children
+      with Not_found ->
+        let child = new_tree head in
+        node.node_children <- StringMap.add head child node.node_children;
+        child
+    in
+    enter_bt node tail count
+
+let rec enter_bt_log log node stack count =
+  node.node_width <- node.node_width +. count;
+  match stack with
+  | [] -> ()
+  | head :: tail ->
+    let node =
+      try
+        StringMap.find head node.node_children
+      with Not_found ->
+        let child = new_tree head in
+        node.node_children <- StringMap.add head child node.node_children;
+        if not (StringMap.mem head !log) then
+          log := StringMap.add head node !log;
+        child
+    in
+    enter_bt_log log node tail count
+
 let tree_of_bts bts =
-  let node = new_node "Flame Graph" in
-  let rec enter node stack count =
-    node.node_width <- node.node_width +. count;
-    match stack with
-    | [] -> ()
-    | head :: tail ->
-      let node =
-        try
-          StringMap.find head node.node_children
-        with Not_found ->
-          let child = new_node head in
-          node.node_children <- StringMap.add head child node.node_children;
-          child
-      in
-      enter node tail count
-  in
-  List.iter (fun (stack, count) -> enter node stack count) bts;
+  let node = new_tree "Flame Graph" in
+  List.iter (fun (stack, count) -> enter_bt node stack count) bts;
   node
 
 let read_folded_file filename =
@@ -47,6 +64,7 @@ let read_folded_file filename =
       bts := (stack, count) :: !bts
   ) filename;
   !bts
+
 
 let rec height_of_tree node =
   let depth = ref 1 in
@@ -83,13 +101,22 @@ let palette kind name =
     (red, green, blue)
 
 let rec filter_tree f tree =
-  let tree2 = new_node tree.node_title in
+  let tree2 = new_tree tree.node_title in
   tree2.node_width <- tree.node_width;
+  let filtered = ref 0. in
   StringMap.iter (fun name node ->
     if f node then
       tree2.node_children <-
         StringMap.add name (filter_tree f node) tree2.node_children
+    else
+      filtered := node.node_width +. !filtered
   ) tree.node_children;
+  if !filtered > 0.01 then begin
+    let node = new_tree ".." in
+    node.node_width <- !filtered;
+    if f node then
+      tree2.node_children <- StringMap.add ".." node tree2.node_children
+  end;
   tree2
 
 
@@ -117,16 +144,31 @@ module type DisplayArg = sig
 
 end
 
+type config = {
+  mutable max_depth : int;
+  mutable width : int;
+  mutable palette : string -> rgb;
+}
+
+let new_config () = {
+    max_depth = 30;
+    width = 1200;
+    palette = palette Hot;
+  }
+
 module type DisplayResult = sig
-  val of_tree : (string -> rgb) -> tree -> string
+  val of_tree : ?config:config -> tree -> string
 end
 
 module Display(S : DisplayArg) = struct
 
-  let of_tree palette node =
-
-  let max_depth = 30 in
-  let width = 1200 in
+  let of_tree ?config node =
+    let config = match config with
+        None -> new_config ()
+      | Some config -> config
+    in
+    let max_depth = config.max_depth in
+  let width = config.width in
 
   let width = float width in
   let width_unit = width /. width_of_tree node in
@@ -155,7 +197,7 @@ module Display(S : DisplayArg) = struct
         if len <= max_length then title else
           String.sub title 0 max_length
       in
-      let (red, green, blue) = palette node.node_title in
+      let (red, green, blue) = config.palette node.node_title in
       S.rectangle svg ~title
         ~caption ~x ~y ~width ~red ~green ~blue;
       let x = ref x in

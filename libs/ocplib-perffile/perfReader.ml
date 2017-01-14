@@ -15,7 +15,7 @@
 open StringCompat
 open PerfTypes
 
-let verbose = ref 0
+let verbose = ref 1
 
 let expected_header_size = 104   (* 104 = 8 + 8 + 8 + 16 + 16 + 16 + 32 *)
 let event_type_size = 72
@@ -373,12 +373,15 @@ let read ?(on_attr = (fun _attr _ids -> ())) ~on_event ~filename =
   let ic = open_in_bin filename in
   let buf = Bytes.create 8 in
   really_input ic buf 0 8;
-  if Bytes.to_string buf <> "PERFFILE" then
+  let magic = Bytes.to_string buf in
+  if magic <> "PERFFILE" && magic <> "PERFILE2" then
     failwith (Printf.sprintf "Error: file %S has bad magic %S\n%!"
                 filename (Bytes.to_string buf))
   ;
-  really_input ic buf 0 8;
-  let sizeL, pos = LittleEndian.Byt.get_int64 buf 0 in
+
+  let sizeL, pos =
+    really_input ic buf 0 8;
+    LittleEndian.Byt.get_int64 buf 0 in
   let size = Int64.to_int sizeL in
   if !verbose > 0 then
     Printf.eprintf "Size of PERFFILE header = %d\n%!" size;
@@ -411,6 +414,9 @@ let read ?(on_attr = (fun _attr _ids -> ())) ~on_event ~filename =
 
   let event_types =
     let event_type_pos = Int64.to_int (fst event_types) in
+    if event_type_pos = 0 then
+      Int64Map.empty
+    else
     let event_type_size = Int64.to_int (snd event_types) in
     seek_in ic event_type_pos;
     let event_types = Bytes.create event_type_size in

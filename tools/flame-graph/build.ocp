@@ -4,6 +4,8 @@ begin library "ocplib-flame-graph";
     "flameGraphSVGFiles.ml" (file2string = [ "flameGraphSVG.js" ]);
     "flameGraphSVG.ml";
     "flameGraph.ml";
+    "flameGraphPerf.ml";
+    "flameGraphExec.ml";
   ];
   requires = [
     "ocplib-file"; (* FileString *)
