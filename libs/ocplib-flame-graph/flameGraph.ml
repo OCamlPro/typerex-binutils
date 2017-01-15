@@ -124,7 +124,12 @@ module type DisplayArg = sig
 
   type t
 
-  val create : title:string -> width:float -> height:float -> t
+  val create : title:string ->
+    ?js:string ->
+    width:float ->
+    height:float ->
+    unit ->
+    t
 
   val rectangle :
     t ->
@@ -148,12 +153,14 @@ type config = {
   mutable max_depth : int;
   mutable width : int;
   mutable palette : string -> rgb;
+  mutable js : string option;
 }
 
 let new_config () = {
     max_depth = 30;
     width = 1200;
     palette = palette Hot;
+    js = None;
   }
 
 module type DisplayResult = sig
@@ -168,22 +175,21 @@ module Display(S : DisplayArg) = struct
       | Some config -> config
     in
     let max_depth = config.max_depth in
-  let width = config.width in
+    let width = config.width in
 
-  let width = float width in
-  let width_unit = width /. width_of_tree node in
+    let width = float width in
+    let width_unit = width /. width_of_tree node in
 
-  let node = filter_tree (fun node ->
-    node.node_width *. width_unit > 5.
-  ) node in
+    let node = filter_tree (fun node ->
+      node.node_width *. width_unit > 5.
+    ) node in
 
-  let depth = min (height_of_tree node) max_depth  in
-  let height = depth * 16 in
+    let depth = min (height_of_tree node) max_depth  in
+    let height = depth * 16 in
 
   let height = float height in
 
-  let svg = S.create ~width ~height
-    ~title:node.node_title in
+  let svg = S.create ?js:config.js ~width ~height ~title:node.node_title () in
 
   let rec iter level node x y =
     let width = node.node_width *. width_unit in

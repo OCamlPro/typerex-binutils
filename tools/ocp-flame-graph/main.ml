@@ -2,6 +2,8 @@
 let output = ref None
 
 let config = FlameGraph.new_config ()
+let frequency = ref 99
+
 
 let svg_of_tree tree =
   let s = FlameGraph.SVG.of_tree ~config tree in
@@ -21,9 +23,12 @@ let svg_of_filename filename =
   let tree = FlameGraph.tree_of_bts bts in
   FlameGraph.set_title tree
     (Printf.sprintf "Flame Graph of %s (by ocp-flamegraph)" filename);
-  if !output = None then output := Some (filename ^ ".svg");
-  svg_of_tree tree;
-  ()
+  match !output with
+  | Some _ -> svg_of_tree tree
+  | None ->
+    output := Some (filename ^ ".svg");
+    svg_of_tree tree;
+    output := None
 
 let handle_perf_script () =
     let tmp_file = Filename.temp_file "perf" ".perf" in
@@ -38,7 +43,7 @@ let handle_perf args =
   | command :: _ ->
     let perf_command = "perf" in
     let args = perf_command ::
-      "record" :: "-F" :: "99" :: "-g" :: "--" :: args in
+      "record" :: "-F" :: string_of_int !frequency :: "-g" :: "--" :: args in
     Printf.eprintf "Starting '%s'\n%!"
       (String.concat "' '" args);
     let args = Array.of_list args in
@@ -54,9 +59,9 @@ let perf_args = ref []
 
 let () =
 
-  let arg_list = [
+  let arg_list = Arg.align [
     "--perf-script", Arg.Unit handle_perf_script,
-    " Read output of 'perf script' and output SVG";
+    " Call 'perf script' and output a flame graph to SVG";
     "--perf", Arg.Tuple [
       Arg.Unit (fun () -> perf_exec := true);
       Arg.Rest (fun s -> perf_args := s :: !perf_args);
@@ -71,6 +76,15 @@ let () =
     "--max-depth", Arg.Int (fun n -> config.FlameGraph.max_depth <- n),
       Printf.sprintf "MAX_DEPTH max depth of flame graph (default %d)"
         config.FlameGraph.max_depth;
+
+    "--js", Arg.String (fun s ->
+      let s = FileString.read_file s in
+      config.FlameGraph.js <- Some s),
+    "FILE.js Javascript to include in generated SVG file";
+
+    "-F", Arg.Int (fun n -> frequency := n),
+    Printf.sprintf "Freq Frequency for perf (current %d)" !frequency;
+
   ] in
   let arg_usage = String.concat "\n" [
     "ocp-flame-graph [OPTIONS] [FOLDED FILES]: Flame Graph Generator";
