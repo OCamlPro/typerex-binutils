@@ -15,6 +15,7 @@ type config = {
   mutable max_depth : int;
   mutable width : int;
   mutable palette : string -> rgb;
+  mutable js : string option;
 }
 
 val new_config : unit -> config
@@ -35,7 +36,13 @@ module type DisplayArg = sig
 
   type t
 
-  val create : title:string -> width:float -> height:float -> t
+  val create :
+    title:string ->
+    ?js:string ->
+    width:float ->
+    height:float ->
+    unit ->
+    t
 
   val rectangle :
     t ->

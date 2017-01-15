@@ -1,7 +1,13 @@
 
 type t
 
-val create : title:string -> width:float -> height:float -> t
+val create :
+  title:string ->
+  ?js:string ->
+  width:float ->
+  height:float ->
+  unit ->
+  t
 
 val rectangle :
   t ->

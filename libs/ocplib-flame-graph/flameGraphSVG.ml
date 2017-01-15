@@ -33,9 +33,14 @@ let header t =
     realwidth realheight realwidth realheight
 ;;
 
-let javascript t =
-  Printf.bprintf t.buffer "%s"
-    (List.assoc "flameGraphSVG.js" FlameGraphSVGFiles.files)
+let javascript t js =
+  Printf.bprintf t.buffer "<script type=\"text/ecmascript\">\n<![CDATA[\n";
+  Buffer.add_string t.buffer (match js with
+  | None -> List.assoc "flameGraphSVG.js" FlameGraphSVGFiles.files
+  | Some js -> js);
+  Printf.bprintf t.buffer "]]>\n</script>\n";
+  ()
+
 
 let screen t =
   let realwidth = realwidth t in
@@ -68,7 +73,7 @@ let to_string t =
   trailer t;
   Buffer.contents t.buffer
 
-let create ~title ~width ~height =
+let create ~title ?js ~width ~height () =
   let buffer = Buffer.create 10_000 in
   let t =
   {
@@ -76,6 +81,6 @@ let create ~title ~width ~height =
   }
   in
   header t;
-  javascript t;
+  javascript t js;
   screen t;
   t

@@ -1,0 +1,14 @@
+
+begin library "ocplib-flame-graph";
+  files = [
+    "flameGraphSVGFiles.ml" (file2string = [ "flameGraphSVG.js" ]);
+    "flameGraphSVG.ml";
+    "flameGraph.ml";
+    "flameGraphPerf.ml";
+    "flameGraphExec.ml";
+  ];
+  requires = [
+    "ocplib-file"; (* FileString *)
+    "ocplib-lang"; (* StringCompat.StringMap *)
+             ];
+end;;
