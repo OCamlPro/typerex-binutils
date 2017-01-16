@@ -14,7 +14,9 @@ Usage with Perf:
 
 * You can ask ocp-flame-graph to run your program:
 
+```
 ocp-flame-graph [OPTIONS] --perf COMMAND ARGS
+```
 
 It will generate an SVG file called "perf-COMMAND-PID.svg" that you can view
 in most browsers.
@@ -23,15 +25,35 @@ in most browsers.
 "perf -F 99 -g -- COMMAND ARGS", you can use ocp-flame-graph to
 generate the Flame Graph from the output of "perf script" :
 
+```
 ocp-flame-graph [OPTIONS] --perf-script
+```
 
 By default, the Flame Graph is generated on the standard output.
 
 Other Options:
 --------------
 
+```
   -o OUTPUT.svg
   --output OUTPUT.svg   Output SVG to this file (-- is stdout)
   --max-depth MAX_DEPTH max depth of flame graph (default 30)
   --js FILE.js          Javascript to include in generated SVG file
   -F Freq               Frequency for perf (current 99)
+  --interpolate Fun     Try to interpolate partial stacks within Fun 
+```
+
+Discussions:
+------------
+You should avoid values such as 100 for frequency, to avoid clock steps.
+If your flame graph shows "partial stacks", i.e. the unwinder didn't unwind
+all the stack, resulting in a missing bottom of stack, you can use
+the --interpolate option to try to recover the correct bottom of stack.
+Typically:
+
+```
+ocp-flame-graph -o perf.svg --max-depth 40 --interpolate __libc_start_main --perf-script
+```
+
+Notice that the argument of --interpolate should be the function at
+the bottom of the stack.

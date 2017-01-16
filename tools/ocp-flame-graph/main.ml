@@ -3,7 +3,7 @@ let output = ref None
 
 let config = FlameGraph.new_config ()
 let frequency = ref 99
-
+let interpolate = ref None
 
 let svg_of_tree tree =
   let s = FlameGraph.SVG.of_tree ~config tree in
@@ -34,7 +34,7 @@ let handle_perf_script () =
     let tmp_file = Filename.temp_file "perf" ".perf" in
     let _retcode = Printf.kprintf Sys.command "perf script > %s" tmp_file in
     let ic = open_in tmp_file in
-    let tree = FlameGraphPerf.read_perf_script ic in
+    let tree = FlameGraphPerf.read_perf_script ?interpolate:!interpolate ic in
     svg_of_tree tree
 
 let handle_perf args =
@@ -84,6 +84,9 @@ let () =
 
     "-F", Arg.Int (fun n -> frequency := n),
     Printf.sprintf "Freq Frequency for perf (current %d)" !frequency;
+
+    "--interpolate", Arg.String (fun s -> interpolate := Some s),
+    "Function Try to interpolate partial stacks within top function Function";
 
   ] in
   let arg_usage = String.concat "\n" [
