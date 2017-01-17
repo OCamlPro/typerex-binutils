@@ -18,9 +18,12 @@
 (*  SOFTWARE.                                                             *)
 (**************************************************************************)
 
+open StringCompat
+
 let output = ref None
 let folded = ref None
 let recursive = ref false
+let dwarf = ref false
 
 let config = FlameGraph.new_config ()
 let frequency = ref 99
@@ -35,6 +38,18 @@ let svg_of_tree tree =
     FlameGraphFile.write_folded file bts;
     Printf.eprintf "Folded file %S generated\n%!" file
   end;
+  let palette =
+    let map = ref StringMap.empty in
+    function name ->
+      try
+        StringMap.find name !map
+      with
+      | Not_found ->
+        let rgb = config.FlameGraph.palette name in
+        map := StringMap.add name rgb !map;
+        rgb
+  in
+  let config = { config with FlameGraph.palette } in
   let s = FlameGraph.SVG.of_tree ~config tree in
   match !output with
   | None | Some "--" ->
@@ -70,8 +85,15 @@ let handle_perf args =
   | [] -> Printf.eprintf "Error: --perf expects a command\n%!"
   | command :: _ ->
     let perf_command = "perf" in
+    let unwinding =
+      if !dwarf then
+        [ "--call-graph"; "dwarf" ]
+      else
+        []
+    in
     let args = perf_command ::
-      "record" :: "-F" :: string_of_int !frequency :: "-g" :: "--" :: args in
+      "record" :: "-F" :: string_of_int !frequency :: "-g" ::
+      unwinding @ ["--"] @ args in
     Printf.eprintf "Starting '%s'\n%!"
       (String.concat "' '" args);
     let args = Array.of_list args in
@@ -82,16 +104,21 @@ let handle_perf args =
     end;
     handle_perf_script ()
 
-let perf_exec = ref false
+let action = ref None
 let perf_args = ref []
 
 let () =
 
   let arg_list = Arg.align [
-    "--perf-script", Arg.Unit handle_perf_script,
+    "--perf-script", Arg.Unit (fun () ->
+      action := Some handle_perf_script),
     " Call 'perf script' and output a flame graph to SVG";
+
     "--perf", Arg.Tuple [
-      Arg.Unit (fun () -> perf_exec := true);
+      Arg.Unit (fun () ->
+        action := Some (function () ->
+          handle_perf (List.rev !perf_args)
+        ));
       Arg.Rest (fun s -> perf_args := s :: !perf_args);
     ],
     "COMMAND Call COMMAND with 'perf' and output SVG";
@@ -122,6 +149,9 @@ let () =
     "--recursive", Arg.Set recursive,
     " Merge recursive function calls";
 
+    "--dwarf", Arg.Set dwarf,
+    " Use dwarf unwinding instead of frame pointers";
+
   ] in
   let arg_usage = String.concat "\n" [
     "ocp-flame-graph [OPTIONS] [FOLDED FILES]: Flame Graph Generator";
@@ -129,5 +159,6 @@ let () =
 
   Arg.parse arg_list svg_of_filename arg_usage;
 
-  if !perf_exec then
-    handle_perf (List.rev !perf_args)
+  match !action with
+  | None -> ()
+  | Some action -> action ()
