@@ -21,14 +21,17 @@
 
 type tree
 
-type bts = (string list * float) list
-
 type palette =
 | Hot
 | Mem
 | IO
 
 type rgb = int * int * int
+
+type bts = (string list * float) list
+
+val tree_of_bts : bts -> tree
+val bts_of_tree : tree -> bts
 
 type config = {
   mutable max_depth : int;
@@ -41,13 +44,11 @@ val new_config : unit -> config
 
 val new_tree : string -> tree
 val enter_bt : tree -> string list -> float -> unit
-val enter_bt_log : tree StringCompat.StringMap.t ref -> tree -> string list -> float -> unit
 
 val set_title : tree -> string -> unit
-val read_folded_file : string -> bts
-val tree_of_bts : bts -> tree
 val height_of_tree : tree -> int
 val width_of_tree : tree -> float
+val merge_rec : tree -> tree
 
 val palette : palette -> string -> rgb
 

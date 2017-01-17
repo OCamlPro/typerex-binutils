@@ -18,17 +18,23 @@
 (*  SOFTWARE.                                                             *)
 (**************************************************************************)
 
-begin library "ocplib-flame-graph";
-  files = [
-    "flameGraphSVGFiles.ml" (file2string = [ "flameGraphSVG.js" ]);
-    "flameGraphSVG.ml";
-    "flameGraph.ml";
-    "flameGraphFile.ml";
-    "flameGraphPerf.ml";
-    "flameGraphExec.ml";
-  ];
-  requires = [
-    "ocplib-file"; (* FileString *)
-    "ocplib-lang"; (* StringCompat.StringMap *)
-             ];
-end;;
+open StringCompat
+
+let read_folded filename =
+  let bts = ref [] in
+  FileString.iter_lines (fun line ->
+    if line <> "" then
+      let stack,count = OcpString.cut_at line ' ' in
+      let stack = OcpString.split stack ';' in
+      let count = float_of_string count in
+      bts := (stack, count) :: !bts
+  ) filename;
+  !bts
+
+let write_folded filename bts =
+  let oc = open_out filename in
+  List.iter (fun (stack, count) ->
+    Printf.fprintf oc "%s %.0f\n"
+      (String.concat ";" stack) count
+  ) bts;
+  close_out oc

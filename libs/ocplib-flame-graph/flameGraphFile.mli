@@ -18,17 +18,7 @@
 (*  SOFTWARE.                                                             *)
 (**************************************************************************)
 
-begin library "ocplib-flame-graph";
-  files = [
-    "flameGraphSVGFiles.ml" (file2string = [ "flameGraphSVG.js" ]);
-    "flameGraphSVG.ml";
-    "flameGraph.ml";
-    "flameGraphFile.ml";
-    "flameGraphPerf.ml";
-    "flameGraphExec.ml";
-  ];
-  requires = [
-    "ocplib-file"; (* FileString *)
-    "ocplib-lang"; (* StringCompat.StringMap *)
-             ];
-end;;
+open FlameGraph
+
+val read_folded : string -> bts
+val write_folded : string -> bts -> unit
