@@ -18,6 +18,7 @@
 (*  SOFTWARE.                                                             *)
 (**************************************************************************)
 
+open StringCompat
 
 type tree
 
@@ -49,6 +50,8 @@ val set_title : tree -> string -> unit
 val height_of_tree : tree -> int
 val width_of_tree : tree -> float
 val merge_rec : tree -> tree
+val merge_set :  string StringMap.t -> tree -> tree
+
 
 val palette : palette -> string -> rgb
 

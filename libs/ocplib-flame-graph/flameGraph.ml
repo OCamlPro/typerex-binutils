@@ -145,6 +145,33 @@ let merge_rec tree =
     merge_rec stack, count) bts in
   tree_of_bts bts
 
+let rec merge_set sets stack =
+  match stack with
+  | [] -> []
+  | n1 :: stack ->
+    let stack = merge_set sets stack in
+    match stack with
+    | [] -> n1 :: []
+    | n2 :: tailstack ->
+      try
+        let set1 = StringMap.find n1 sets in
+        let set2 = StringMap.find n2 sets in
+        if set1 = set2 then
+          set1 :: tailstack
+        else n1 :: stack
+      with Not_found -> n1 :: stack
+
+
+let merge_set sets tree =
+  let sets = ref sets in
+  StringMap.iter (fun _ setname ->
+    sets := StringMap.add setname setname !sets) !sets;
+  let sets = !sets in
+  let bts = bts_of_tree tree in
+  let bts = List.map (fun (stack, count) ->
+    merge_set sets stack, count) bts in
+  tree_of_bts bts
+
 module type DisplayArg = sig
 
   type t
