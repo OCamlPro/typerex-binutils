@@ -18,13 +18,7 @@
 (*  SOFTWARE.                                                             *)
 (**************************************************************************)
 
-(****************************************************************************
-#
-#          This file is managed by ocp-autoconf.
-#
-#  Remove it from `manage_files` in 'ocp-autoconf.config' if you want to
-#  modify it manually.
-#
- ****************************************************************************)
+open FlameGraph
 
-if include "autoconf/config.ocpgen" then {} else {}
+val read_folded : string -> bts
+val write_folded : string -> bts -> unit

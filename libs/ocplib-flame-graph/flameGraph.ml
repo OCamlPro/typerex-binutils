@@ -1,3 +1,23 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                        OCamlPro Typerex                                *)
+(*                                                                        *)
+(*   Copyright OCamlPro 2011-2016. All rights reserved.                   *)
+(*   This file is distributed under the terms of the LGPL v3.0            *)
+(*   (GNU Lesser General Public Licence version 3.0).                     *)
+(*                                                                        *)
+(*     Contact: <typerex@ocamlpro.com> (http://www.ocamlpro.com/)         *)
+(*                                                                        *)
+(*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       *)
+(*  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES       *)
+(*  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND              *)
+(*  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS   *)
+(*  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN    *)
+(*  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN     *)
+(*  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE      *)
+(*  SOFTWARE.                                                             *)
+(**************************************************************************)
+
 open StringCompat
 
 type tree = {
@@ -32,39 +52,25 @@ let rec enter_bt node stack count =
     in
     enter_bt node tail count
 
-let rec enter_bt_log log node stack count =
-  node.node_width <- node.node_width +. count;
-  match stack with
-  | [] -> ()
-  | head :: tail ->
-    let node =
-      try
-        StringMap.find head node.node_children
-      with Not_found ->
-        let child = new_tree head in
-        node.node_children <- StringMap.add head child node.node_children;
-        if not (StringMap.mem head !log) then
-          log := StringMap.add head node !log;
-        child
-    in
-    enter_bt_log log node tail count
-
 let tree_of_bts bts =
   let node = new_tree "Flame Graph" in
   List.iter (fun (stack, count) -> enter_bt node stack count) bts;
   node
 
-let read_folded_file filename =
-  let bts = ref [] in
-  FileString.iter_lines (fun line ->
-    if line <> "" then
-      let stack,count = OcpString.cut_at line ' ' in
-      let stack = OcpString.split stack ';' in
-      let count = float_of_string count in
-      bts := (stack, count) :: !bts
-  ) filename;
-  !bts
-
+let rec bts_of_tree node =
+  let subcount = ref 0. in
+  let children = ref [] in
+  StringMap.iter (fun _ node ->
+    subcount := !subcount +. node.node_width;
+    let bts = bts_of_tree node in
+    let bts = List.map (fun (stack, count) ->
+      (node.node_title :: stack, count)) bts in
+    children := bts @ !children
+  ) node.node_children;
+  let count = node.node_width -. !subcount in
+  if count > 0.01 then
+    ([node.node_title],count) :: !children
+  else !children
 
 let rec height_of_tree node =
   let depth = ref 1 in
@@ -119,6 +125,25 @@ let rec filter_tree f tree =
   end;
   tree2
 
+let rec merge_rec stack =
+  match stack with
+  | [] -> []
+  | n1 :: stack ->
+    let stack = merge_rec stack in
+    match stack with
+    | [] -> n1 :: []
+    | n2 :: tailstack ->
+      let name_rec = n1 ^ "(*)" in
+      if n1 = n2 || n2 = name_rec then
+        name_rec :: tailstack
+      else
+        n1 :: stack
+
+let merge_rec tree =
+  let bts = bts_of_tree tree in
+  let bts = List.map (fun (stack, count) ->
+    merge_rec stack, count) bts in
+  tree_of_bts bts
 
 module type DisplayArg = sig
 

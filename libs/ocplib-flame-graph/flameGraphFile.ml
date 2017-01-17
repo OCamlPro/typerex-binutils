@@ -18,13 +18,23 @@
 (*  SOFTWARE.                                                             *)
 (**************************************************************************)
 
-(****************************************************************************
-#
-#          This file is managed by ocp-autoconf.
-#
-#  Remove it from `manage_files` in 'ocp-autoconf.config' if you want to
-#  modify it manually.
-#
- ****************************************************************************)
+open StringCompat
 
-if include "autoconf/config.ocpgen" then {} else {}
+let read_folded filename =
+  let bts = ref [] in
+  FileString.iter_lines (fun line ->
+    if line <> "" then
+      let stack,count = OcpString.cut_at line ' ' in
+      let stack = OcpString.split stack ';' in
+      let count = float_of_string count in
+      bts := (stack, count) :: !bts
+  ) filename;
+  !bts
+
+let write_folded filename bts =
+  let oc = open_out filename in
+  List.iter (fun (stack, count) ->
+    Printf.fprintf oc "%s %.0f\n"
+      (String.concat ";" stack) count
+  ) bts;
+  close_out oc
