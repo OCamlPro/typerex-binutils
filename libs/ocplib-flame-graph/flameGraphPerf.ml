@@ -1,5 +1,4 @@
 open StringCompat
-open FlameGraph
 
 
 let get_function_name line =
@@ -28,10 +27,48 @@ let get_function_name line =
   (*  Printf.eprintf "%S for %S\n%!" fun_name line; *)
   fun_name
 
+let rec list_common_prefix list1 list2 =
+  match list1, list2 with
+  | h1::tail1, h2 :: tail2 ->
+    if h1 = h2 then h1 :: (list_common_prefix tail1 tail2)
+    else []
+  | _ -> []
+
 (* Read output of "perf script" *)
-let read_perf_script ic =
-  let log = ref StringMap.empty in
-  let node = new_tree "Flame Graph of Perf Data" in
+let read_perf_script ?interpolate ic =
+  let node = FlameGraph.new_tree "Flame Graph of Perf Data" in
+
+  let interpolate_started = ref None in
+  let to_interpolate = ref [] in
+  let flush_interpolated bottom_stack =
+    List.iter (fun stack ->
+      FlameGraph.enter_bt node (bottom_stack @ stack) 1.
+    )  !to_interpolate;
+    to_interpolate := []
+  in
+
+  let enter_stack stack =
+    match interpolate with
+    | None -> FlameGraph.enter_bt node stack 1.
+    | Some bottom_name ->
+      match stack with
+        [] -> ()
+      | fun_name :: _ ->
+        if fun_name = bottom_name then begin
+          if !to_interpolate != [] then begin
+            match !interpolate_started with
+            | None -> assert false
+            | Some prev_stack ->
+              flush_interpolated (list_common_prefix prev_stack stack);
+          end;
+          interpolate_started := Some stack;
+          FlameGraph.enter_bt node stack 1.
+        end else
+          match !interpolate_started with
+          | None -> FlameGraph.enter_bt node stack 1.
+          | Some _ ->
+            to_interpolate := stack :: !to_interpolate
+  in
   let lines = ref [] in
   let commit_lines () =
     let record = List.rev !lines in
@@ -48,12 +85,7 @@ let read_perf_script ic =
           Printf.eprintf "header = %S\n%!" header
         else
           let stack = List.map get_function_name (List.rev stack) in
-          let node = match stack with
-            | [] -> node
-            | fun_name :: _ ->
-              try StringMap.find fun_name !log with Not_found -> node
-          in
-          enter_bt_log log node stack 1.
+          enter_stack stack
   in
 
   let rec iter () =
@@ -69,5 +101,6 @@ let read_perf_script ic =
     iter ()
   with End_of_file ->
     commit_lines ();
+    flush_interpolated [];
     close_in ic;
     node
