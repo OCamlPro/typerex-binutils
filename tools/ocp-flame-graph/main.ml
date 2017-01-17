@@ -24,12 +24,15 @@ let output = ref None
 let folded = ref None
 let recursive = ref false
 let dwarf = ref false
+let sets = ref StringMap.empty
 
 let config = FlameGraph.new_config ()
 let frequency = ref 99
 let interpolate = ref None
 
 let svg_of_tree tree =
+  let tree = if !sets <> StringMap.empty then
+      FlameGraph.merge_set !sets tree else tree in
   let tree = if !recursive then FlameGraph.merge_rec tree else tree in
   begin match !folded with
   | None -> ()
@@ -104,6 +107,16 @@ let handle_perf args =
     end;
     handle_perf_script ()
 
+let add_set set =
+  let set = OcpString.split set ',' in
+  match set with
+  | [] -> ()
+  | name :: _ ->
+    let setname = "set(" ^ name ^ " + ...)" in
+    List.iter (fun name ->
+      sets := StringMap.add name setname !sets
+    ) set
+
 let action = ref None
 let perf_args = ref []
 
@@ -151,6 +164,9 @@ let () =
 
     "--dwarf", Arg.Set dwarf,
     " Use dwarf unwinding instead of frame pointers";
+
+    "--set", Arg.String add_set,
+    "SET Comma separated list of functions as a recursive set";
 
   ] in
   let arg_usage = String.concat "\n" [
